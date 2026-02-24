@@ -1,6 +1,8 @@
 public class CityRescueImpl {
+    public static int currentTick = 0;
+    
     public void initialise(int width, int height) throws InvalidGridException {
-
+        currentTick = 0;
     }
 
     public int[] getGridSize() {
@@ -80,10 +82,10 @@ public class CityRescueImpl {
     }
 
     public void tick() {
-
+        currentTick++;
     }
 
     public String getStatus() {
-        
+
     }
 }
