@@ -1,7 +1,14 @@
 package cityrescue;
 
-import cityrescue.enums.*;
-import cityrescue.exceptions.*;
+import cityrescue.enums.IncidentType;
+import cityrescue.enums.UnitType;
+import cityrescue.exceptions.IDNotRecognisedException;
+import cityrescue.exceptions.InvalidCapacityException;
+import cityrescue.exceptions.InvalidGridException;
+import cityrescue.exceptions.InvalidLocationException;
+import cityrescue.exceptions.InvalidNameException;
+import cityrescue.exceptions.InvalidSeverityException;
+import cityrescue.exceptions.InvalidUnitException;
 
 /**
  * CityRescueImpl (Starter)
@@ -29,15 +36,59 @@ public class CityRescueImpl implements CityRescue {
 
     @Override
     public void initialise(int width, int height) throws InvalidGridException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (width <= 0 || height <= 0) {
+            throw new InvalidGridException("Grid dimensions must be positive");
+        }
+
+        cityMap = new CityMap(width, height);
+        stations = new Station[MAX_STATIONS];
+        unit = new Unit[MAX_UNITS];
+        incidents = new Incident[MAX_INCIDENTS];
+
+        stationCount = 0;
+        unitCount = 0;
+        IncidentCount = 0;
+
+        nextStationId = 1;
+        nextUnitId = 1;
+        nextIncidentId = 1;
+        tick = 0;
     }
+
+    //getters for grid size, station/unit/incident ids, and status
 
     @Override
     public int[] getGridSize() {
         // TODO: implement
         throw new UnsupportedOperationException("Not implemented yet");
     }
+
+    @Override
+    public int[] getStationIds() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public int[] getUnitIds() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public int[] getIncidentIds() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public String getStatus() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+
+    //methods for obsticles 
 
     @Override
     public void addObstacle(int x, int y) throws InvalidLocationException {
@@ -50,6 +101,10 @@ public class CityRescueImpl implements CityRescue {
         // TODO: implement
         throw new UnsupportedOperationException("Not implemented yet");
     }
+
+
+
+    //methods for stations 
 
     @Override
     public int addStation(String name, int x, int y) throws InvalidNameException, InvalidLocationException {
@@ -69,11 +124,8 @@ public class CityRescueImpl implements CityRescue {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public int[] getStationIds() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
+
+    //methods for units
 
     @Override
     public int addUnit(int stationId, UnitType type) throws IDNotRecognisedException, InvalidUnitException, IllegalStateException {
@@ -99,17 +151,18 @@ public class CityRescueImpl implements CityRescue {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public int[] getUnitIds() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
 
     @Override
     public String viewUnit(int unitId) throws IDNotRecognisedException {
         // TODO: implement
         throw new UnsupportedOperationException("Not implemented yet");
     }
+
+
+
+
+
+    //method for incidents 
 
     @Override
     public int reportIncident(IncidentType type, int severity, int x, int y) throws InvalidSeverityException, InvalidLocationException {
@@ -130,16 +183,14 @@ public class CityRescueImpl implements CityRescue {
     }
 
     @Override
-    public int[] getIncidentIds() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
     public String viewIncident(int incidentId) throws IDNotRecognisedException {
         // TODO: implement
         throw new UnsupportedOperationException("Not implemented yet");
     }
+
+
+
+    //methods for dispatching and ticking
 
     @Override
     public void dispatch() {
@@ -153,13 +204,9 @@ public class CityRescueImpl implements CityRescue {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    @Override
-    public String getStatus() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
 
     
     
     
 }
+
