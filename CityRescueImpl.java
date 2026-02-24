@@ -6,7 +6,7 @@ public class CityRescueImpl {
     }
 
     public int[] getGridSize() {
-
+        return new int[0];
     }
 
     public void addObstacle(int x, int y) throws InvalidLocationException {
@@ -30,7 +30,7 @@ public class CityRescueImpl {
     }
 
     public int[] getStationIds() {
-
+        return new int[0];
     }
 
     public int addUnit(int stationId, UnitType type) throws IDNotRecognisedException, InvalidUnitException, IllegalStateException {
@@ -50,7 +50,7 @@ public class CityRescueImpl {
     }
 
     public int[] getUnitIds() {
-
+        return new int[0];
     }
 
     public String viewUnit(int unitId) throws IDNotRecognisedException {
@@ -70,7 +70,7 @@ public class CityRescueImpl {
     }
 
     public int[] getIncidentIds() {
-
+        return new int[0];
     }
 
     public String viewIncident(int incidentId) throws IDNotRecognisedException {
