@@ -11,7 +11,21 @@ import cityrescue.exceptions.*;
  */
 public class CityRescueImpl implements CityRescue {
 
-    // TODO: add fields (map, arrays for stations/units/incidents, counters, tick, etc.)
+    // TODO: add fields (map, arrays for stations/units/incidents, counters, tick, etc.) added i think
+
+    //constants 
+    final int MAX_STATIONS = 20;
+    final int MAX_UNITS = 50;
+    final int MAX_INCIDENTS = 200;
+
+    //attributes 
+    CityMap cityMap;
+    Station[] stations = new Station[MAX_STATIONS];
+    Unit[] unit = new Unit[MAX_UNITS];
+    Incident[] incidents = new Incident[MAX_INCIDENTS];
+    int stationCount, unitCount, IncidentCount;
+    int nextStationId = 1, nextUnitId = 1, nextIncidentId = 1;
+    int tick;
 
     @Override
     public void initialise(int width, int height) throws InvalidGridException {
@@ -145,18 +159,7 @@ public class CityRescueImpl implements CityRescue {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    //constants 
-    final int MAX_STATIONS = 20;
-    final int MAX_UNITS = 50;
-    final int MAX_INCIDENTS = 200;
-
-    //attributes 
-    CityMap cityMap;
-    Station[] stations = new Station[MAX_STATIONS];
-    Unit[] unit = new Unit[MAX_UNITS];
-    Incident[] incidents = new Incident[MAX_INCIDENTS];
-    int stationCount, unitCount, IncidentCount;
-    int nextStationId = 1, nextUnitId = 1, nextIncidentId = 1;
-    int tick;
+    
+    
     
 }
