@@ -17,7 +17,7 @@ public class CityRescueImpl {
     int nextStationId = 1, nextUnitId = 1, nextIncidentId = 1;
     int tick;
 
-    
+
 
     public static int currentTick = 0;
     
@@ -25,9 +25,34 @@ public class CityRescueImpl {
         currentTick = 0;
     }
 
+    //getters
+
     public int[] getGridSize() {
         return new int[0];
     }
+
+    public int[] getStationIds() {
+        return new int[0];
+    }
+
+    public int[] getUnitIds() {
+        return new int[0];
+    }
+
+    public int[] getIncidentIds() {
+        return new int[0];
+    }
+
+    public String getStatus() {
+        String output = "";
+        output += "TICK=" + currentTick;
+
+        return output;
+    }
+
+
+
+
 
     public void addObstacle(int x, int y) throws InvalidLocationException {
 
@@ -49,10 +74,7 @@ public class CityRescueImpl {
 
     }
 
-    public int[] getStationIds() {
-        return new int[0];
-    }
-
+    
     public int addUnit(int stationId, UnitType type) throws IDNotRecognisedException, InvalidUnitException, IllegalStateException {
 
     }
@@ -69,9 +91,6 @@ public class CityRescueImpl {
 
     }
 
-    public int[] getUnitIds() {
-        return new int[0];
-    }
 
     public String viewUnit(int unitId) throws IDNotRecognisedException {
 
@@ -89,9 +108,6 @@ public class CityRescueImpl {
 
     }
 
-    public int[] getIncidentIds() {
-        return new int[0];
-    }
 
     public String viewIncident(int incidentId) throws IDNotRecognisedException {
 
@@ -105,10 +121,11 @@ public class CityRescueImpl {
         currentTick++;
     }
 
-    public String getStatus() {
-        String output = "";
-        output += "TICK=" + currentTick;
 
-        return output;
+
+    public static void main(String[] args) {
+        System.out.println("Hello World");
     }
+
+
 }
