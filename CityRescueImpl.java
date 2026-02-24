@@ -86,6 +86,9 @@ public class CityRescueImpl {
     }
 
     public String getStatus() {
+        String output = "";
+        output += "TICK=" + currentTick;
 
+        return output;
     }
 }
