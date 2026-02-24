@@ -324,9 +324,12 @@ public class Main {
             super(unitId, UnitType.AMBULANCE, homeStationId, x, y);
         }
 
+        @Override
         public boolean canHandle(Incident incident){
             return incident.getType() == IncidentType.MEDICAL;
         }
+
+        @Override
         public int ticksAtScene(){
             return 0; //change this
         }
@@ -340,9 +343,12 @@ public class Main {
             super(unitId, UnitType.FIRE_ENGINE, homeStationId, x, y);
         }
 
+        @Override
         public boolean canHandle(Incident incident){
             return incident.getType() == IncidentType.FIRE;
         }
+
+        @Override
         public int ticksAtScene(){
             return 0; //change this
         }
@@ -354,9 +360,12 @@ public class Main {
             super(unitId, UnitType.POLICE_CAR, homeStationId, x, y);
         }
 
+        @Override
         public boolean canHandle(Incident incident){
             return incident.getType() == IncidentType.CRIME;
         }
+
+        @Override
         public int ticksAtScene(){
             return 0; //change this
         }
