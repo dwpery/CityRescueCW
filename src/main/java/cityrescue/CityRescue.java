@@ -50,6 +50,7 @@ public interface CityRescue {
 
         int width, height;
         boolean [][] blocked;
+        int obstacleCount;
 
         //constructor
         public CityMap(int width, int height) {
@@ -58,32 +59,41 @@ public interface CityRescue {
             this.blocked = new boolean[width][height];
         }
 
+        //getters
+
+        public int getWidth(){
+            return width;
+        }
+        public int getHeight(){
+            return height;
+        }
+
 
         //methods 
-        public boolean inBounds(int x, int y) {
-            return x >= 0 && x < width && y >= 0 && y < height; //needs changing 
+        public boolean inBounds (int x, int y){
+            return false;
         }
 
-        public boolean isBlocked(int x, int y) {
-            if (!inBounds(x, y)) {
-                return true; // out of bounds is considered blocked
-            }
-            return blocked[x][y];
+        public boolean isBlocked (int x, int y){
+            return false;
         }
 
-        public void setBlocked(int x, int y, boolean isBlocked) {
-            if (inBounds(x, y)) {
-                blocked[x][y] = isBlocked;
-            }
-        }   
 
-        public boolean isLegalCell(int x, int y) {
-            return inBounds(x, y) && !isBlocked(x, y);
+        public void addObstacle (int x, int y){
+
+        }
+        
+        public void removeObstacle(int x, int y){
+
         }
 
-        public boolean isLegalMove(int fromX, int fromY, int toX, int toY) {
 
-            return false; //change this
+        public boolean isLegalCell (int x, int y){
+            return false;
+        }
+        
+        public int getObstacleCount(){
+            return obstacleCount;
         }
 
 
@@ -111,7 +121,7 @@ public interface CityRescue {
 
 
         //getters and setters
-        public int getId(){
+        public int getStationId(){
             return stationId;
         }
         public String getName(){
@@ -134,22 +144,26 @@ public interface CityRescue {
         }
 
 
-        //methods
-        public boolean hasSpace() {
-            return unitCount < capactity;
-        }
+        //methods 
 
-        public void setCapactity (int newCap){
+        public void setCapactity(){
 
         }
 
-        public void addUnitId (int unitID){
+        public boolean hasSpace(){
+            return false;
+        }
+
+        public void addUnitId(int unitId){
 
         }
 
-        public int[] getUnitOdsAccending(){
+        public void removeUnitId(int unitId){
 
-            return null;
+        } 
+
+        public boolean ownsUnit(int unitId){
+            return false;
         }
 
     }
@@ -163,7 +177,7 @@ public interface CityRescue {
         int x, y;
         IncidentStatus status;
         int assignedUnitId;
-        int workRemaining;
+        
 
         public Incident(int incidentId, IncidentType type, int severity, int x, int y) {
             this.incidentId = incidentId;
@@ -173,11 +187,11 @@ public interface CityRescue {
             this.y = y;
             this.status = IncidentStatus.REPORTED;
             this.assignedUnitId = -1; // no unit assigned initially
-            this.workRemaining = 100; // arbitrary work units
+            
         }
 
         //getters for all the attributes
-        public int getId(){
+        public int getIncidentId(){
             return incidentId;
         }
         public int getSeverity(){
@@ -198,39 +212,24 @@ public interface CityRescue {
         public int getAssignedUnitId(){
             return assignedUnitId;
         }
-        public int getWorkRemaining(){
-            return workRemaining;
-        }
+        
 
         //methods
-        public void assignUnit(int unitId){
-            
-        }
-
-        public void startWork(){
-            
-        }
-
-        public void decrementWork(){
+        public void setSeverity(int severity){
 
         }
 
-        public boolean isworkComplete(){
-            return false;
+        public void setStatus(IncidentStatus status){
+
         }
 
-        public void resolve(){
-            
-        }
+        public void assignUnit (int unitId){
 
-        public void cancel(){
-            
         }
+        
+        public void unassignUnit(){
 
-        public void setSeverity(int newSeverity){
-            
         }
-
 
 
     }
@@ -243,8 +242,7 @@ public interface CityRescue {
         int x, y;
         UnitStatus status;
         int assignedIncidentId;
-        int targetX, targetY;
-        int workRemaining;
+        
 
         public Unit(int unitId, UnitType type, int homeStationId, int x, int y) {
             this.unitId = unitId;
@@ -254,14 +252,12 @@ public interface CityRescue {
             this.y = y;
             this.status = UnitStatus.IDLE;
             this.assignedIncidentId = -1; // no incident assigned
-            this.targetX = -1;
-            this.targetY = -1;
-            this.workRemaining = 0;
+            
         }
 
         //getters for all the attributes
 
-        public int getId(){
+        public int getUnitId(){
             return unitId;
         }
         public UnitType getType(){
@@ -287,35 +283,37 @@ public interface CityRescue {
         }
 
         //methods
-        public void setOutOFService(){
-            
-        }
-
-        public void dispatchToIncident(int incidentId, int targetX, int targetY){
-            
-        }
-
-        public void stepTowardsTarget(CityMap map){
-            
-        }
         
-        public boolean hasArrived(){
-            return x == targetX && y == targetY;
+        public void setHomeStationId (int stationId){
+
         }
 
-        public void arrivedOnScene(){
-            
+        public void setLocation(int targetX, int targetY){
+
         }
-        public void decrementWork(){
-            
+
+        public void setStatus(UnitStatus status){
+
+        }
+
+
+        public void assignIncident(int incidentId){
+
+        }
+        public void clearIncident(){
+
+        }
+
+        public void startWork(){
+
+        }
+
+        public void tickWork(){
+
         }
 
         public boolean isWorkComplete(){
-            return workRemaining <= 0;
-        }
-
-        public void clearAssignmentToIdle(){
-
+            return false;
         }
 
         //abstract methods
