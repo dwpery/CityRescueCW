@@ -1,5 +1,6 @@
 package cityrescue;
 
+import cityrescue.CityRescue.Unit;
 import cityrescue.enums.IncidentStatus;
 import cityrescue.enums.IncidentType;
 import cityrescue.enums.UnitStatus;
@@ -48,19 +49,28 @@ public interface CityRescue {
 
     public class CityMap{
 
-        int width, height;
-        boolean [][] blocked;
-        int obstacleCount;
+        private final int width, height;
+        private final boolean [][] blocked;
+        private int obstacleCount;
 
         //constructor
         public CityMap(int width, int height) {
+            
+            if (width <= 0 || height <= 0) {
+                throw new InvalidGridException("Invalid grid size: " + width + "x" + height);
+            }
+            
+            //for some reason this doesnt work locally but it works here 
+
             this.width = width;
             this.height = height;
             this.blocked = new boolean[width][height];
+            this.obstacleCount = 0;
         }
 
         //getters
 
+        //size of the map
         public int getWidth(){
             return width;
         }
@@ -68,59 +78,99 @@ public interface CityRescue {
             return height;
         }
 
-
-        //methods 
-        public boolean inBounds (int x, int y){
-            return false;
-        }
-
-        public boolean isBlocked (int x, int y){
-            return false;
-        }
-
-
-        public void addObstacle (int x, int y){
-
-        }
-        
-        public void removeObstacle(int x, int y){
-
-        }
-
-
-        public boolean isLegalCell (int x, int y){
-            return false;
-        }
-        
+        //get the number of obstacles 
         public int getObstacleCount(){
             return obstacleCount;
         }
+
+
+        //methods 
+
+        //checking biunds
+        public boolean inBounds (int x, int y){
+            return x >= 0 && x < width && y >= 0 && y < height;
+        }
+
+        //checking whether a cell is blocked 
+        public boolean isBlocked (int x, int y){
+            if (!inBounds(x, y)){
+                return false;
+            }
+            return blocked[x][y];
+        }
+
+        //if the location is in bounds and not blocked 
+        public boolean isLegalCell (int x, int y){
+            return inBounds(x, y) && !blocked[x][y];
+        }
+
+
+        //for adding and removing obstacles from the map (the remove might not be needed but good to have regardless)
+
+        public void addObstacle (int x, int y){
+            if(!inBounds(x,y)){
+                throw new InvaildLocationException("Out of bounds");
+
+                //for some reason doesn't like being done locally but in github is fine?????
+            }
+            if(!blocked[x][y]){
+                blocked[x][y] = true;
+                obstacleCount++;
+            }
+        }
+        
+        public void removeObstacle(int x, int y){
+            if (!inBounds(x, y)){
+                throw new InvaildLocationException("Out of bounds");
+                //again dont work here 
+            }
+            if(blocked[x][y]){
+                blocked[x][y] = false;
+                obstacleCount--;
+            }
+
+        }
+
 
 
     }
 
     public class Station {
 
-        int stationId;
-        String name;
-        int x, y;
-        int capactity;
-        int[] unitIds;
-        int unitCount;
+        private final int stationId;
+        private final String name;
+        private final int x, y;
+
+        private int capacity;
+        private int[] unitIds;
+        private int unitCount;
 
         //constructor
         public Station(int stationId, String name, int x, int y, int capacity) {
+
+            //exception handling that dont work still
+            if (stationId <= 0) {
+                throw new IllegalArgumentException("Station id must be > 0");
+            }
+            if (name == null || name.trim().isEmpty()) {
+                throw new IllegalArgumentException("Station name must not be blank");
+            }
+            if (capacity <= 0) {
+                throw new IllegalArgumentException("Station capacity must be > 0");
+            }
+            
             this.stationId = stationId;
             this.name = name;
             this.x = x;
             this.y = y;
-            this.capactity = capacity;
+
+            this.capacity = capacity;
             this.unitIds = new int[capacity];
             this.unitCount = 0;
         }
 
 
-        //getters and setters
+        //getters 
         public int getStationId(){
             return stationId;
         }
@@ -137,7 +187,7 @@ public interface CityRescue {
             return unitIds;
         }
         public int getCapacity(){
-            return capactity;
+            return capacity;
         }
         public int getUnitCount(){
             return unitCount;
@@ -146,24 +196,83 @@ public interface CityRescue {
 
         //methods 
 
-        public void setCapactity(){
+        public void setCapacity(int newCapacity){
+
+            //exception handling 
+            if (newCapacity <= 0) {
+                throw new IllegalArgumentException("Capacity must be > 0");
+            }
+            if (newCapacity < unitCount) {
+                throw new IllegalArgumentException("Capacity cannot be less than current unit count");
+            }
+            if (newCapacity == this.capacity) {
+                return;
+            }
+
+            //using a temporary array to store the contents of unitID and updating the size 
+            int[] resized = new int[newCapacity];
+            for (int i = 0; i < unitCount; i++) {
+                resized[i] = unitIds[i];
+            }
+
+            //putting the contents back in the array 
+            this.unitIds = resized;
+            this.capacity = newCapacity;
 
         }
 
         public boolean hasSpace(){
-            return false;
+            return unitCount < capacity;
         }
 
         public void addUnitId(int unitId){
 
+            //exception handling 
+            if (unitId <= 0) {
+            throw new IllegalArgumentException("Unit id must be > 0");
+            }
+            if (!hasSpace()) {
+            throw new IllegalStateException("Station capacity exceeded");
+            }
+        
+            //just in case a unit is accidentally added again
+            if (ownsUnit(unitId)) {
+            return;
+            }
+
+            //adding the unit
+            unitIds[unitCount] = unitId;
+            unitCount++;
+
         }
 
+        //method for remoding a unit 
         public void removeUnitId(int unitId){
 
+            int idx = indexOfUnit(unitId);
+            if (idx == -1) {
+            return;
+            }
+
+            //shift array left to keep array tidy 
+            for (int i = idx; i < unitCount - 1; i++) {
+            unitIds[i] = unitIds[i + 1];
+            }
+            unitCount--;
         } 
 
+        //helper method for index of the units 
+        private int indexOfUnit(int unitId) {
+        for (int i = 0; i < unitCount; i++) {
+            if (unitIds[i] == unitId) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
         public boolean ownsUnit(int unitId){
-            return false;
+            return indexOfUnit(unitId) != -1;
         }
 
     }
@@ -171,15 +280,25 @@ public interface CityRescue {
 
 
     public class Incident {
-        int incidentId;
-        IncidentType type;
-        int severity;
-        int x, y;
-        IncidentStatus status;
-        int assignedUnitId;
+        private final int incidentId;
+        private final IncidentType type;
+        private int severity;
+        private final int x, y;
+        private IncidentStatus status;
+        private int assignedUnitId;
         
 
         public Incident(int incidentId, IncidentType type, int severity, int x, int y) {
+            
+            if (incidentId <= 0) {
+            throw new IllegalArgumentException("Incident id must be > 0");
+            }
+            if (type == null) {
+            throw new IllegalArgumentException("Incident type must not be null");
+            }
+            validateSeverity(severity);
+            
+            
             this.incidentId = incidentId;
             this.type = type;
             this.severity = severity;
@@ -190,7 +309,7 @@ public interface CityRescue {
             
         }
 
-        //getters for all the attributes
+        //getters
         public int getIncidentId(){
             return incidentId;
         }
@@ -215,33 +334,56 @@ public interface CityRescue {
         
 
         //methods
-        public void setSeverity(int severity){
 
+        //for setting the severity of an incident 
+        public void setSeverity(int newSeverity){
+
+            validateSeverity(newSeverity);
+            this.severity = newSeverity;
+            
         }
 
-        public void setStatus(IncidentStatus status){
-
+        public void setStatus(IncidentStatus newStatus) {
+        if (newStatus == null) {
+            throw new IllegalArgumentException("Incident status must not be null");
+        }
+        this.status = newStatus;
         }
 
         public void assignUnit (int unitId){
-
+            if(unitId <= 0){
+                throw new IllegalArgumentException("Unit id must be > 0");
+            }
+            this.assignedUnitId = unitId;
         }
         
         public void unassignUnit(){
-
+             this.assignedUnitId = -1;
         }
 
 
+        //helpers
+
+        private static void validateSeverity(int sev) {
+        if (sev < 1 || sev > 5) {
+            throw new IllegalArgumentException("Severity must be in range 1..5");
+        }
+        }
     }
 
     public abstract class Unit {
 
-        int unitId;
-        UnitType type;
-        int homeStationId;
-        int x, y;
-        UnitStatus status;
-        int assignedIncidentId;
+        private final int unitId;
+        private final UnitType type;
+
+        private int homeStationId;
+
+        private int x, y;
+
+        private UnitStatus status;
+        
+        private int assignedIncidentId;
+        private int workTicksRemaining;
         
 
         public Unit(int unitId, UnitType type, int homeStationId, int x, int y) {
@@ -252,6 +394,7 @@ public interface CityRescue {
             this.y = y;
             this.status = UnitStatus.IDLE;
             this.assignedIncidentId = -1; // no incident assigned
+            this.workTicksRemaining = 0;
             
         }
 
@@ -284,41 +427,59 @@ public interface CityRescue {
 
         //methods
         
+        //methods for setting up
         public void setHomeStationId (int stationId){
-
+            if (stationId <= 0) {
+            throw new IllegalArgumentException("Home station id must be > 0");
+            }
+            this.homeStationId = stationId;
         }
 
-        public void setLocation(int targetX, int targetY){
-
+        public void setLocation(int x, int y){
+            this.x = x;
+            this.y = y;
         }
 
-        public void setStatus(UnitStatus status){
-
+        public void setStatus(UnitStatus newStatus){
+            if (newStatus == null) {
+            throw new IllegalArgumentException("Unit status must not be null");
+            }
+            this.status = newStatus;
         }
 
 
         public void assignIncident(int incidentId){
-
+            if (incidentId <= 0) {
+            throw new IllegalArgumentException("Incident id must be > 0");
+            }
+            this.assignedIncidentId = incidentId;
+            // When assigned, work should not be running yet
+            this.workTicksRemaining = 0;
         }
         public void clearIncident(){
-
+            this.assignedIncidentId = -1;
+            this.workTicksRemaining = 0;
         }
 
-        public void startWork(){
+        //methods for when on the scene
 
+        public void startWork(){
+            this.workTicksRemaining = ticksAtScene();
         }
 
         public void tickWork(){
-
+            if (workTicksRemaining > 0) {
+            workTicksRemaining--;
+            }
         }
 
         public boolean isWorkComplete(){
-            return false;
+            return workTicksRemaining <= 0;
         }
 
-        //abstract methods
+        //polymorphism hooks 
 
-        public abstract boolean canHandle(Incident incident);
+        public abstract boolean canHandle(IncidentType incidentType);
 
         public abstract int ticksAtScene();
 
@@ -328,56 +489,59 @@ public interface CityRescue {
 
     }
 
-    public class Ambulance extends Unit{
+    public final class Ambulance extends Unit{
 
-        public Ambulance(int unitId, int homeStationId, int x, int y) {
-            super(unitId, UnitType.AMBULANCE, homeStationId, x, y);
+        public Ambulance(int unitId, int homeStationId, int startX, int startY) {
+            super(unitId, UnitType.AMBULANCE, homeStationId, startX, startY);
         }
 
         @Override
-        public boolean canHandle(Incident incident){
-            return incident.getType() == IncidentType.MEDICAL;
+        public boolean canHandle(IncidentType incidentType){
+            return incidentType == IncidentType.MEDICAL;
         }
 
         @Override
         public int ticksAtScene(){
-            return 0; //change this
+            return 2;
         }
 
 
     }
 
-    public class FireEngine extends Unit {
+    public final class PoliceCar extends Unit {
 
-        public FireEngine(int unitId, int homeStationId, int x, int y) {
-            super(unitId, UnitType.FIRE_ENGINE, homeStationId, x, y);
+        public PoliceCar(int unitId, int homeStationId, int startX, int startY) {
+            super(unitId, UnitType.POLICE_CAR, homeStationId, startX, startY);
         }
 
         @Override
-        public boolean canHandle(Incident incident){
-            return incident.getType() == IncidentType.FIRE;
+        public boolean canHandle(IncidentType type) {
+            return type == IncidentType.CRIME;
         }
 
         @Override
-        public int ticksAtScene(){
-            return 0; //change this
-        }
-
-    }
-    public class PoliceCar extends Unit {
-
-        public PoliceCar(int unitId, int homeStationId, int x, int y) {
-            super(unitId, UnitType.POLICE_CAR, homeStationId, x, y);
-        }
-
-        @Override
-        public boolean canHandle(Incident incident){
-            return incident.getType() == IncidentType.CRIME;
-        }
-
-        @Override
-        public int ticksAtScene(){
-            return 0; //change this
+        public int ticksAtScene() {
+            return 3; 
         }
     }
+
+    public final class FireEngine extends Unit {
+
+        public FireEngine(int unitId, int homeStationId, int startX, int startY) {
+            super(unitId, UnitType.FIRE_ENGINE, homeStationId, startX, startY);
+        }
+
+        @Override
+        public boolean canHandle(IncidentType type) {
+            return type == IncidentType.FIRE;
+        }
+
+        @Override
+        public int ticksAtScene() {
+            return 4; //check this is the right tick ect
+        }
+    }
+
+    
+    
 }
