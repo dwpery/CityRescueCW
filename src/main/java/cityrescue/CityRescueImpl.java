@@ -30,7 +30,7 @@ public class CityRescueImpl implements CityRescue {
     Station[] stations = new Station[MAX_STATIONS];
     Unit[] unit = new Unit[MAX_UNITS];
     Incident[] incidents = new Incident[MAX_INCIDENTS];
-    int stationCount, unitCount, IncidentCount;
+    int stationCount, unitCount, incidentCount, obstacleCount;
     int nextStationId = 1, nextUnitId = 1, nextIncidentId = 1;
     int tick;
 
@@ -47,7 +47,8 @@ public class CityRescueImpl implements CityRescue {
 
         stationCount = 0;
         unitCount = 0;
-        IncidentCount = 0;
+        incidentCount = 0;
+        obstacleCount = 0;
 
         nextStationId = 1;
         nextUnitId = 1;
@@ -59,32 +60,60 @@ public class CityRescueImpl implements CityRescue {
 
     @Override
     public int[] getGridSize() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return new int[] {cityMap.getWidth(), cityMap.getHeight()};
     }
 
     @Override
     public int[] getStationIds() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        int[] stationIds = new int[stationCount];
+        
+        for (int i = 0; i <= stationCount - 1; i++) {
+            stationIds[i] = stations[i].getStationId();
+        }
+
+        return stationIds;
     }
 
     @Override
     public int[] getUnitIds() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        int[] unitIds = new int[unitCount];
+        
+        for (int i = 0; i <= unitCount - 1; i++) {
+            unitIds[i] = unit[i].getUnitId();
+        }
+
+        return unitIds;
     }
 
     @Override
     public int[] getIncidentIds() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        int[] incidentIds = new int[incidentCount];
+        
+        for (int i = 0; i <= incidentCount - 1; i++) {
+            incidentIds = incidents[i].getIncidentId();
+        }
+
+        return incidentIds;
     }
 
     @Override
     public String getStatus() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        String report = "TICK=" + toString(tick);
+        report += "\nSTATIONS=" + toString(stationCount) + "UNITS=" + toString(unitCount) + "INCIDENTS=" + incidentCount + "OBSTACLES=" + toString(obstacleCount);
+        
+        report += "\nINCIDENTS\n";
+        int[] incidentIds = getIncidentIds();
+        for (int i = 0; i <= incidentCount - 1; i++) {
+            report += viewIncident(incidentsIds[i]) + "\n";
+        }
+
+        report += "\nUNITS\n";
+        int[] unitIds = getUnitIds();
+        for (int i = 0; i <= unitCount - 1; i++) {
+            report += viewUnit(unitIds[i]) + "\n";
+        }
+
+        return report;
     }
 
 
