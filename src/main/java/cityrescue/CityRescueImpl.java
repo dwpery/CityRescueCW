@@ -121,14 +121,26 @@ public class CityRescueImpl implements CityRescue {
 
     @Override
     public void addObstacle(int x, int y) throws InvalidLocationException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (cityMap.inBounds(x, y) != true || cityMap.isLegalCell(x, y) != true) {
+            throw new InvalidLocationException("Coordinates are out of bounds");
+        }
+
+        if (cityMap.isLegalCell(x, y)) {
+            cityMap.addObstacle(x, y);
+            obstacleCount++;
+        }
     }
 
     @Override
     public void removeObstacle(int x, int y) throws InvalidLocationException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (cityMap.isBounds(x, y) != true || cityMap) {
+            throw new InvalidLocationException("Coordinates are out of bounds");
+        }
+        
+        if (cityMap.isLegalCell(x, y)) {
+            cityMap.removeObstacle(x, y);
+            obstacleCount--;
+        }
     }
 
 
