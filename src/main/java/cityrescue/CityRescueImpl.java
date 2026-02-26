@@ -9,6 +9,7 @@ import cityrescue.exceptions.InvalidLocationException;
 import cityrescue.exceptions.InvalidNameException;
 import cityrescue.exceptions.InvalidSeverityException;
 import cityrescue.exceptions.InvalidUnitException;
+import cityrescue.exceptions.CapacityExceededException;
 
 /**
  * CityRescueImpl (Starter)
@@ -133,7 +134,7 @@ public class CityRescueImpl implements CityRescue {
 
     @Override
     public void removeObstacle(int x, int y) throws InvalidLocationException {
-        if (cityMap.isBounds(x, y) != true || cityMap) {
+        if (cityMap.isBounds(x, y) != true) {
             throw new InvalidLocationException("Coordinates are out of bounds");
         }
         
@@ -149,8 +150,19 @@ public class CityRescueImpl implements CityRescue {
 
     @Override
     public int addStation(String name, int x, int y) throws InvalidNameException, InvalidLocationException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        // Validation block
+        if (name == null) {
+            throw new InvalidNameException("Station name cannot be blank");
+        } else if (cityMap.inBounds(x, y) != true || cityMap.isLegalCell(x, y) != true) {
+            throw new InvaildLocationException("Location out of bounds or obstructed");
+        } else if (stationCount >= MAX_STATIONS) {
+            throw new CapacityExceededException("Max stations reached");
+        }
+
+        int id = nextStationId;
+        nextStationId++;
+
+        stations[stationCount] = new Station(id, name, x, y, 5);
     }
 
     @Override
