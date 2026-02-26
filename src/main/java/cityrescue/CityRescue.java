@@ -86,7 +86,7 @@ public interface CityRescue {
 
         //methods 
 
-        //checking biunds
+        //checking bounds
         public boolean inBounds (int x, int y){
             return x >= 0 && x < width && y >= 0 && y < height;
         }
@@ -148,7 +148,7 @@ public interface CityRescue {
         //constructor
         public Station(int stationId, String name, int x, int y, int capacity) {
 
-            //exception handling that dont work still
+            //exception handling 
             if (stationId <= 0) {
                 throw new IllegalArgumentException("Station id must be > 0");
             }
@@ -263,14 +263,15 @@ public interface CityRescue {
 
         //helper method for index of the units 
         private int indexOfUnit(int unitId) {
-        for (int i = 0; i < unitCount; i++) {
-            if (unitIds[i] == unitId) {
-                return i;
+            for (int i = 0; i < unitCount; i++) {
+                if (unitIds[i] == unitId) {
+                    return i;
+                }
             }
+            return -1;
         }
-        return -1;
-    }
 
+        //for checking if the station owns a particular unit 
         public boolean ownsUnit(int unitId){
             return indexOfUnit(unitId) != -1;
         }
@@ -278,8 +279,9 @@ public interface CityRescue {
     }
 
 
-
     public class Incident {
+
+        //attributes
         private final int incidentId;
         private final IncidentType type;
         private int severity;
@@ -288,17 +290,18 @@ public interface CityRescue {
         private int assignedUnitId;
         
 
+        //constructor 
         public Incident(int incidentId, IncidentType type, int severity, int x, int y) {
             
+            //exception handling
             if (incidentId <= 0) {
-            throw new IllegalArgumentException("Incident id must be > 0");
+                throw new IllegalArgumentException("Incident id must be > 0");
             }
             if (type == null) {
-            throw new IllegalArgumentException("Incident type must not be null");
+                throw new IllegalArgumentException("Incident type must not be null");
             }
             validateSeverity(severity);
-            
-            
+
             this.incidentId = incidentId;
             this.type = type;
             this.severity = severity;
@@ -308,6 +311,7 @@ public interface CityRescue {
             this.assignedUnitId = -1; // no unit assigned initially
             
         }
+
 
         //getters
         public int getIncidentId(){
@@ -343,6 +347,7 @@ public interface CityRescue {
             
         }
 
+        //for setting the status of the incident 
         public void setStatus(IncidentStatus newStatus) {
         if (newStatus == null) {
             throw new IllegalArgumentException("Incident status must not be null");
@@ -350,6 +355,7 @@ public interface CityRescue {
         this.status = newStatus;
         }
 
+        //for assingning the unit that will deal with the incident 
         public void assignUnit (int unitId){
             if(unitId <= 0){
                 throw new IllegalArgumentException("Unit id must be > 0");
@@ -357,13 +363,15 @@ public interface CityRescue {
             this.assignedUnitId = unitId;
         }
         
+        //for unassigning the unit when the incident is resolved, so the unit can move onto a different incident 
         public void unassignUnit(){
              this.assignedUnitId = -1;
         }
 
 
-        //helpers
+        //helper method 
 
+        //to check the severity is within the bounds 
         private static void validateSeverity(int sev) {
         if (sev < 1 || sev > 5) {
             throw new IllegalArgumentException("Severity must be in range 1..5");
@@ -373,6 +381,7 @@ public interface CityRescue {
 
     public abstract class Unit {
 
+        //attributes 
         private final int unitId;
         private final UnitType type;
 
@@ -386,6 +395,7 @@ public interface CityRescue {
         private int workTicksRemaining;
         
 
+        //constructor 
         public Unit(int unitId, UnitType type, int homeStationId, int x, int y) {
             this.unitId = unitId;
             this.type = type;
@@ -398,7 +408,7 @@ public interface CityRescue {
             
         }
 
-        //getters for all the attributes
+        //getters 
 
         public int getUnitId(){
             return unitId;
@@ -430,7 +440,7 @@ public interface CityRescue {
 
         //methods
         
-        //methods for setting up
+        //methods for setting the station that the unit is attached too
         public void setHomeStationId (int stationId){
             if (stationId <= 0) {
             throw new IllegalArgumentException("Home station id must be > 0");
@@ -438,11 +448,13 @@ public interface CityRescue {
             this.homeStationId = stationId;
         }
 
+        //for setting the location of the unit
         public void setLocation(int x, int y){
             this.x = x;
             this.y = y;
         }
 
+        //for setting the status of the unit 
         public void setStatus(UnitStatus newStatus){
             if (newStatus == null) {
             throw new IllegalArgumentException("Unit status must not be null");
@@ -450,7 +462,7 @@ public interface CityRescue {
             this.status = newStatus;
         }
 
-
+        //for assinging an incident to the unit,
         public void assignIncident(int incidentId){
             if (incidentId <= 0) {
             throw new IllegalArgumentException("Incident id must be > 0");
@@ -466,21 +478,24 @@ public interface CityRescue {
 
         //methods for when on the scene
 
+        //method to start the tick clock
         public void startWork(){
             this.workTicksRemaining = ticksAtScene();
         }
 
+        //method to advance the tick clock
         public void tickWork(){
             if (workTicksRemaining > 0) {
             workTicksRemaining--;
             }
         }
 
+        //checking whether the incident has been resolved 
         public boolean isWorkComplete(){
             return workTicksRemaining <= 0;
         }
 
-        //polymorphism hooks 
+        //polymorphism  
 
         public abstract boolean canHandle(IncidentType incidentType);
 
@@ -494,15 +509,18 @@ public interface CityRescue {
 
     public final class Ambulance extends Unit{
 
+        //constructor 
         public Ambulance(int unitId, int homeStationId, int startX, int startY) {
             super(unitId, UnitType.AMBULANCE, homeStationId, startX, startY);
         }
 
+        //check incident is for ambulance 
         @Override
         public boolean canHandle(IncidentType incidentType){
             return incidentType == IncidentType.MEDICAL;
         }
 
+        //tick time for resolving an incident 
         @Override
         public int ticksAtScene(){
             return 2;
@@ -513,15 +531,18 @@ public interface CityRescue {
 
     public final class PoliceCar extends Unit {
 
+        //constructor 
         public PoliceCar(int unitId, int homeStationId, int startX, int startY) {
             super(unitId, UnitType.POLICE_CAR, homeStationId, startX, startY);
         }
 
+        //check incident is for police
         @Override
         public boolean canHandle(IncidentType type) {
             return type == IncidentType.CRIME;
         }
 
+        //tick time for resolving an incident 
         @Override
         public int ticksAtScene() {
             return 3; 
@@ -530,15 +551,18 @@ public interface CityRescue {
 
     public final class FireEngine extends Unit {
 
+        //constructor
         public FireEngine(int unitId, int homeStationId, int startX, int startY) {
             super(unitId, UnitType.FIRE_ENGINE, homeStationId, startX, startY);
         }
 
+        //check incident is for fire engine
         @Override
         public boolean canHandle(IncidentType type) {
             return type == IncidentType.FIRE;
         }
 
+        //tick time for resolving an incident 
         @Override
         public int ticksAtScene() {
             return 4; //check this is the right tick ect
