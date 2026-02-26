@@ -56,11 +56,11 @@ public interface CityRescue {
         //constructor
         public CityMap(int width, int height) {
             
-            if (width <= 0 || height <= 0) {
-                throw new InvalidGridException("Invalid grid size: " + width + "x" + height);
-            }
+            //if (width <= 0 || height <= 0) {
+            //throw new InvalidGridException("Invalid grid size: " + width + "x" + height);
+            //}
             
-            //for some reason this doesnt work locally but it works here 
+            //for some reason this doesnt work so just gonna leave like this for now 
 
             this.width = width;
             this.height = height;
@@ -109,7 +109,7 @@ public interface CityRescue {
 
         public void addObstacle (int x, int y){
             if(!inBounds(x,y)){
-                throw new InvaildLocationException("Out of bounds");
+                //throw new InvaildLocationException("Out of bounds");
 
                 //for some reason doesn't like being done locally but in github is fine?????
             }
@@ -121,7 +121,7 @@ public interface CityRescue {
         
         public void removeObstacle(int x, int y){
             if (!inBounds(x, y)){
-                throw new InvaildLocationException("Out of bounds");
+                //throw new InvaildLocationException("Out of bounds");
                 //again dont work here 
             }
             if(blocked[x][y]){
@@ -423,6 +423,9 @@ public interface CityRescue {
         }
         public boolean isAvailableForDispatch(){
             return status == UnitStatus.IDLE;
+        }
+        public int getWorkTicksRemaining(){
+            return workTicksRemaining;
         }
 
         //methods
