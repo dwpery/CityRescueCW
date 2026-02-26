@@ -12,6 +12,7 @@ import cityrescue.exceptions.InvalidLocationException;
 import cityrescue.exceptions.InvalidNameException;
 import cityrescue.exceptions.InvalidSeverityException;
 import cityrescue.exceptions.InvalidUnitException;
+import cityrescue.exceptions.CapacityExceededException;
 
 public interface CityRescue {
     void initialise(int width, int height) throws InvalidGridException;
