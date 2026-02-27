@@ -385,26 +385,89 @@ public class CityRescueImpl implements CityRescue {
 
     @Override
     public int reportIncident(IncidentType type, int severity, int x, int y) throws InvalidSeverityException, InvalidLocationException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+
+        //exception handling for the incident type, severity and location, and maximum incidents
+        if (type == null) {
+            // Not declared in interface, but safer than silently breaking state.
+            throw new IllegalArgumentException("Incident type must not be null");
+        }
+        if (severity < 1 || severity > 5) {
+            throw new InvalidSeverityException("Severity must be 1..5");
+        }
+        if (!cityMap.inBounds(x, y) || cityMap.isBlocked(x, y)) {
+            throw new InvalidLocationException("Incident location invalid (out of bounds or blocked)");
+        }
+        if (incidentCount >= MAX_INCIDENTS) {
+            throw new IllegalStateException("Maximum incidents reached");
+        }
+
+        //determine the incident id for the new incident as 1 above the previous
+        int id = nextIncidentId++;
+        Incident inc = new Incident(id, type, severity, x, y);
+        //apply the new incident to the incidents array
+        incidents[incidentCount++] = inc;
+        return id;
     }
 
     @Override
     public void cancelIncident(int incidentId) throws IDNotRecognisedException, IllegalStateException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+
+        //exception handling for the incident id and the status of the incident
+        Incident inc = getIncidentById(incidentId);
+        if (inc == null) {
+            throw new IDNotRecognisedException("Incident ID not recognised");
+        }
+
+        //can only cancel if the incident is currently reported or dispatched, and if dispatched, release the unit immediately
+        IncidentStatus st = inc.getStatus();
+        if (st != IncidentStatus.REPORTED && st != IncidentStatus.DISPATCHED) {
+            throw new IllegalStateException("Incident cannot be cancelled in its current state");
+        }
+
+        //if dispatched, release the unit immediately by setting it to idle and unassigning it from the incident, and handle if the unit is not found for some reason
+        if (st == IncidentStatus.DISPATCHED) {
+            int uId = inc.getAssignedUnitId();
+            Unit u = getUnitById(uId);
+            if (u != null) {
+                u.setStatus(UnitStatus.IDLE);
+                u.clearIncident();
+            }
+            inc.unassignUnit();
+        }
+
+        inc.setStatus(IncidentStatus.CANCELLED);
     }
 
     @Override
     public void escalateIncident(int incidentId, int newSeverity) throws IDNotRecognisedException, InvalidSeverityException, IllegalStateException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+
+        //exception handling for the incident id, new severity and status of the incident
+        Incident inc = getIncidentById(incidentId);
+        if (inc == null) {
+            throw new IDNotRecognisedException("Incident ID not recognised");
+        }
+
+        if (newSeverity < 1 || newSeverity > 5) {
+            throw new InvalidSeverityException("Severity must be 1..5");
+        }
+
+        if (inc.getStatus() == IncidentStatus.RESOLVED || inc.getStatus() == IncidentStatus.CANCELLED) {
+            throw new IllegalStateException("Cannot escalate a resolved/cancelled incident");
+        }
+
+        //apply the new severity to the incident
+        inc.setSeverity(newSeverity);
     }
 
     @Override
     public String viewIncident(int incidentId) throws IDNotRecognisedException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+
+        //exception handling for the incident id
+        Incident inc = getIncidentById(incidentId);
+        if (inc == null) {
+            throw new IDNotRecognisedException("Incident ID not recognised");
+        }
+        return formatIncidentLine(inc);
     }
 
 
