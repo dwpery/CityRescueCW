@@ -26,13 +26,23 @@ public class CityRescueImpl implements CityRescue {
     final int MAX_UNITS = 50;
     final int MAX_INCIDENTS = 200;
 
-    //attributes 
+    //attributes creating objects for each class
     CityMap cityMap;
     Station[] stations = new Station[MAX_STATIONS];
     Unit[] unit = new Unit[MAX_UNITS];
     Incident[] incidents = new Incident[MAX_INCIDENTS];
-    int stationCount, unitCount, incidentCount, obstacleCount;
-    int nextStationId = 1, nextUnitId = 1, nextIncidentId = 1;
+
+    //counts for station, unit, incident and obstacle 
+    int stationCount; 
+    int unitCount;
+    int incidentCount; 
+    int obstacleCount;
+
+    //used for creating new objects with new id's 
+    int nextStationId = 1;
+    int nextUnitId = 1;
+    int nextIncidentId = 1;
+
     int tick;
 
     @Override
@@ -146,35 +156,76 @@ public class CityRescueImpl implements CityRescue {
 
 
 
-    //methods for stations 
+    //methods for stations, adding, removing and setting the capactiy  
 
     @Override
     public int addStation(String name, int x, int y) throws InvalidNameException, InvalidLocationException {
-        // Validation block
-        if (name == null) {
-            throw new InvalidNameException("Station name cannot be blank");
-        } else if (cityMap.inBounds(x, y) != true || cityMap.isLegalCell(x, y) != true) {
-            throw new InvaildLocationException("Location out of bounds or obstructed");
-        } else if (stationCount >= MAX_STATIONS) {
-            throw new CapacityExceededException("Max stations reached");
+        //exception handling 
+        if (name == null || name.trim().isEmpty()) {
+            throw new InvalidNameException("Station name must not be blank");
+        }
+        if (!cityMap.inBounds(x, y) || cityMap.isBlocked(x, y)) {
+            throw new InvalidLocationException("Station location invalid (out of bounds or blocked)");
+        }
+        if (stationCount >= MAX_STATIONS) {
+            throw new IllegalStateException("Maximum stations reached");
         }
 
-        int id = nextStationId;
-        nextStationId++;
+        //determine the station id for the new station being 1 above the previous 
+        int id = nextStationId++;
+        //creating the new station object 
+        Station s = new Station(id, name.trim(), x, y, DEFAULT_STATION_CAPACITY);
 
-        stations[stationCount] = new Station(id, name, x, y, 5);
+        //adding to the station count
+        stations[stationCount++] = s;
+        return id;
     }
 
     @Override
     public void removeStation(int stationId) throws IDNotRecognisedException, IllegalStateException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        //storing the id of the going to be removed station in a temporary variable 
+        int idx = indexOfStation(stationId);
+        
+        //exception handling
+        if (idx == -1) {
+            throw new IDNotRecognisedException("Station ID not recognised");
+        }
+
+        Station s = stations[idx];
+        if (s.getUnitCount() > 0) {
+            throw new IllegalStateException("Station still owns units");
+        }
+
+        //remove by shifting to ensure there is not a gap in the array 
+        for (int i = idx; i < stationCount - 1; i++) {
+            stations[i] = stations[i + 1];
+        }
+        stations[stationCount - 1] = null;
+        stationCount--;
     }
+
 
     @Override
     public void setStationCapacity(int stationId, int maxUnits) throws IDNotRecognisedException, InvalidCapacityException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+
+        //temporary variable to store the index of the station
+        int idx = indexOfStation(stationId);
+
+        //exception handling 
+        if (idx == -1) {
+            throw new IDNotRecognisedException("Station ID not recognised");
+        }
+
+        //finding the station object with the id and storing it in a temporary variable
+        Station s = stations[idx];
+
+        //exception handling for the capacity of the station, ensuring it is not negative and that it is not less than the number of units currently at the station
+        if (maxUnits <= 0 || maxUnits < s.getUnitCount()) {
+            throw new InvalidCapacityException("Invalid station capacity");
+        }
+
+        //apply the new capactity to the station object
+        s.setCapacity(maxUnits);
     }
 
 
