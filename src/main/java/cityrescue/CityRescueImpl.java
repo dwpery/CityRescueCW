@@ -233,33 +233,148 @@ public class CityRescueImpl implements CityRescue {
 
     @Override
     public int addUnit(int stationId, UnitType type) throws IDNotRecognisedException, InvalidUnitException, IllegalStateException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+
+        //exception handling for the station id, unit type and maximum units
+        int sIdx = indexOfStation(stationId);
+        if (sIdx == -1) {
+            throw new IDNotRecognisedException("Station ID not recognised");
+        }
+        if (type == null) {
+            throw new InvalidUnitException("Unit type must not be null");
+        }
+        if (unitCount >= MAX_UNITS) {
+            throw new IllegalStateException("Maximum units reached");
+        }
+
+        Station s = stations[sIdx];
+        if (!s.hasSpace()) {
+            throw new IllegalStateException("Station has no free capacity");
+        }
+
+        //determine the unit id for the new unit as 1 above the previous unit
+        int id = nextUnitId++;
+
+        //create the new unit object based on the type of unit being added
+        Unit u;
+        if (type == UnitType.AMBULANCE) {
+            u = new Ambulance(id, stationId, s.getX(), s.getY());
+        } else if (type == UnitType.FIRE_ENGINE) {
+            u = new FireEngine(id, stationId, s.getX(), s.getY());
+        } else if (type == UnitType.POLICE_CAR) {
+            u = new PoliceCar(id, stationId, s.getX(), s.getY());
+        } else {
+            //exception handling for an unrecognised unit type 
+            throw new InvalidUnitException("Unrecognised unit type");
+        }
+
+        //apply the new unit to the units array and add the unit to a station 
+        units[unitCount++] = u;
+        s.addUnitId(id);
+
+        return id;
     }
 
     @Override
     public void decommissionUnit(int unitId) throws IDNotRecognisedException, IllegalStateException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+
+        //exception handling for the unit id and the status of the unit
+        int uIdx = indexOfUnit(unitId);
+        if (uIdx == -1) {
+            throw new IDNotRecognisedException("Unit ID not recognised");
+        }
+
+        Unit u = units[uIdx];
+        if (u.getStatus() == UnitStatus.EN_ROUTE || u.getStatus() == UnitStatus.AT_SCENE) {
+            throw new IllegalStateException("Unit is busy and cannot be decommissioned");
+        }
+
+        //remove ownership from its station (with validation that the station exists itself)
+        int sIdx = indexOfStation(u.getHomeStationId());
+        if (sIdx != -1) {
+            stations[sIdx].removeUnitId(unitId);
+        }
+
+        //removed from the units array by shifting to ensure there is not a gap in the array
+        for (int i = uIdx; i < unitCount - 1; i++) {
+            units[i] = units[i + 1];
+        }
+        units[unitCount - 1] = null;
+        unitCount--;
     }
 
     @Override
     public void transferUnit(int unitId, int newStationId) throws IDNotRecognisedException, IllegalStateException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+
+        //exception handling for the unit id, station id, status of the unit and capacity of the station    
+        int uIdx = indexOfUnit(unitId);
+        if (uIdx == -1) {
+            throw new IDNotRecognisedException("Unit ID not recognised");
+        }
+        int newSIdx = indexOfStation(newStationId);
+        if (newSIdx == -1) {
+            throw new IDNotRecognisedException("Station ID not recognised");
+        }
+
+        //unit must be idle to transfer and handle if not 
+        Unit u = units[uIdx];
+        if (u.getStatus() != UnitStatus.IDLE) {
+            throw new IllegalStateException("Unit must be IDLE to transfer");
+        }
+
+        //check the destination station has space and handle if not
+        Station newS = stations[newSIdx];
+        if (!newS.hasSpace()) {
+            throw new IllegalStateException("Destination station has no free capacity");
+        }
+
+        // Remove from old station (if it exists)
+        int oldStationId = u.getHomeStationId();
+        int oldSIdx = indexOfStation(oldStationId);
+
+        // If the old station exists, remove the unit from it
+        if (oldSIdx != -1) {
+            stations[oldSIdx].removeUnitId(unitId);
+        }
+
+        //apply the transfer by adding the unit to the new station and updating the unit's home station and location to match the new station
+        newS.addUnitId(unitId);
+        u.setHomeStationId(newStationId);
+        u.setLocation(newS.getX(), newS.getY());
     }
 
     @Override
     public void setUnitOutOfService(int unitId, boolean outOfService) throws IDNotRecognisedException, IllegalStateException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
 
+        //exception handling for the unit id and the status of the unit when setting out of service or returning to service
+        int uIdx = indexOfUnit(unitId);
+        if (uIdx == -1) {
+            throw new IDNotRecognisedException("Unit ID not recognised");
+        }
+
+        //if setting out of service, unit must be idle. If returning to service, unit must currently be out of service.
+        Unit u = units[uIdx];
+
+        if (outOfService) {
+            if (u.getStatus() != UnitStatus.IDLE) {
+                throw new IllegalStateException("Unit must be IDLE to go out of service");
+            }
+            u.setStatus(UnitStatus.OUT_OF_SERVICE);
+        } else {
+            //return to IDLE only if currently out of service
+            if (u.getStatus() == UnitStatus.OUT_OF_SERVICE) {
+                u.setStatus(UnitStatus.IDLE);
+            }
+        }
+    }
 
     @Override
     public String viewUnit(int unitId) throws IDNotRecognisedException {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        //exception handling for the unit id
+        Unit u = getUnitById(unitId);
+        if (u == null) {
+            throw new IDNotRecognisedException("Unit ID not recognised");
+        }
+        return formatUnitLine(u);
     }
 
 
