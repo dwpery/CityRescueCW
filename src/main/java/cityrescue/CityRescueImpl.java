@@ -19,8 +19,6 @@ import cityrescue.exceptions.CapacityExceededException;
  */
 public class CityRescueImpl implements CityRescue {
 
-    // TODO: add fields (map, arrays for stations/units/incidents, counters, tick, etc.) added i think
-
     //constants 
     final int MAX_STATIONS = 20;
     final int MAX_UNITS = 50;
@@ -504,14 +502,237 @@ public class CityRescueImpl implements CityRescue {
     }
 
 
+    //tick methods 
     @Override
     public void tick() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        tick++;
+
+        // 1) Move EN_ROUTE units in ascending unitId order
+        int[] unitIds = getUnitIds();
+        for (int i = 0; i < unitIds.length; i++) {
+            Unit u = getUnitById(unitIds[i]);
+            if (u == null) continue;
+
+            if (u.getStatus() == UnitStatus.EN_ROUTE) {
+                Incident target = getIncidentById(u.getAssignedIncidentId());
+                if (target != null) {
+                    moveOneStep(u, target.getX(), target.getY());
+                }
+            }
+        }
+
+        // 2) Mark arrivals (units that reached target)
+        for (int i = 0; i < unitIds.length; i++) {
+            Unit u = getUnitById(unitIds[i]);
+            if (u == null) continue;
+
+            if (u.getStatus() == UnitStatus.EN_ROUTE) {
+                Incident target = getIncidentById(u.getAssignedIncidentId());
+                if (target != null && u.getX() == target.getX() && u.getY() == target.getY()) {
+                    u.setStatus(UnitStatus.AT_SCENE);
+                    target.setStatus(IncidentStatus.IN_PROGRESS);
+                    u.startWork();
+                }
+            }
+        }
+
+        // 3) Process on-scene work (units in ascending unitId order)
+        for (int i = 0; i < unitIds.length; i++) {
+            Unit u = getUnitById(unitIds[i]);
+            if (u == null) continue;
+
+            if (u.getStatus() == UnitStatus.AT_SCENE) {
+                u.tickWork();
+            }
+        }
+
+        // 4) Resolve completed incidents in ascending incidentId order
+        int[] incIds = getIncidentIds();
+        for (int i = 0; i < incIds.length; i++) {
+            Incident inc = getIncidentById(incIds[i]);
+            if (inc == null) continue;
+
+            if (inc.getStatus() == IncidentStatus.IN_PROGRESS) {
+                Unit u = getUnitById(inc.getAssignedUnitId());
+                if (u != null && u.getStatus() == UnitStatus.AT_SCENE && u.isWorkComplete()) {
+                    inc.setStatus(IncidentStatus.RESOLVED);
+                    u.setStatus(UnitStatus.IDLE);
+                    u.clearIncident();
+                    // We keep inc.assignedUnitId as-is for deterministic reporting.
+                }
+            }
+        }
     }
 
 
-    
+
+    //helper methods used throughout 
+
+        private Unit chooseBestUnitFor(Incident inc) {
+        Unit best = null;
+        int bestDist = Integer.MAX_VALUE;
+
+        for (int i = 0; i < unitCount; i++) {
+            Unit u = units[i];
+            if (u == null) continue;
+
+            if (u.getStatus() != UnitStatus.IDLE) continue;
+            if (!u.canHandle(inc.getType())) continue;
+            if (u.getAssignedIncidentId() != -1) continue;
+
+            int dist = manhattan(u.getX(), u.getY(), inc.getX(), inc.getY());
+
+            if (best == null) {
+                best = u;
+                bestDist = dist;
+                continue;
+            }
+
+            // Tie-breakers:
+            // 1) shortest distance
+            // 2) lowest unitId
+            // 3) lowest homeStationId
+            if (dist < bestDist) {
+                best = u;
+                bestDist = dist;
+            } else if (dist == bestDist) {
+                if (u.getUnitId() < best.getUnitId()) {
+                    best = u;
+                } else if (u.getUnitId() == best.getUnitId()) {
+                    if (u.getHomeStationId() < best.getHomeStationId()) {
+                        best = u;
+                    }
+                }
+            }
+        }
+
+        return best;
+    }
+
+    private void moveOneStep(Unit u, int targetX, int targetY) {
+        // Movement rule (N, E, S, W), no pathfinding. :contentReference[oaicite:2]{index=2}
+
+        int x = u.getX();
+        int y = u.getY();
+
+        int[][] moves = new int[][] {
+            { x, y - 1 }, // N
+            { x + 1, y }, // E
+            { x, y + 1 }, // S
+            { x - 1, y }  // W
+        };
+
+        int currentDist = manhattan(x, y, targetX, targetY);
+
+        // First pass: first legal move that reduces distance
+        for (int i = 0; i < moves.length; i++) {
+            int nx = moves[i][0];
+            int ny = moves[i][1];
+            if (!cityMap.isLegalCell(nx, ny)) continue;
+
+            int nd = manhattan(nx, ny, targetX, targetY);
+            if (nd < currentDist) {
+                u.setLocation(nx, ny);
+                return;
+            }
+        }
+
+        // Second pass: first legal move in N,E,S,W
+        for (int i = 0; i < moves.length; i++) {
+            int nx = moves[i][0];
+            int ny = moves[i][1];
+            if (!cityMap.isLegalCell(nx, ny)) continue;
+
+            u.setLocation(nx, ny);
+            return;
+        }
+
+        // If no legal move exists, unit stays put
+    }
+
+    private String formatIncidentLine(Incident inc) {
+        String unitStr = (inc.getAssignedUnitId() <= 0) ? "-" : String.valueOf(inc.getAssignedUnitId());
+        return "I#" + inc.getIncidentId()
+            + " TYPE=" + inc.getType()
+            + " SEV=" + inc.getSeverity()
+            + " LOC=(" + inc.getX() + "," + inc.getY() + ")"
+            + " STATUS=" + inc.getStatus()
+            + " UNIT=" + unitStr;
+    }
+
+    private String formatUnitLine(Unit u) {
+        String incStr = (u.getAssignedIncidentId() <= 0) ? "-" : String.valueOf(u.getAssignedIncidentId());
+
+        String base = "U#" + u.getUnitId()
+            + " TYPE=" + u.getType()
+            + " HOME=" + u.getHomeStationId()
+            + " LOC=(" + u.getX() + "," + u.getY() + ")"
+            + " STATUS=" + u.getStatus()
+            + " INCIDENT=" + incStr;
+
+        if (u.getStatus() == UnitStatus.AT_SCENE) {
+            // Requires Unit.getWorkTicksRemaining() (add the getter as noted above)
+            base += " WORK=" + u.getWorkTicksRemaining();
+        }
+        return base;
+    }
+
+    private Station getStationById(int stationId) {
+        int idx = indexOfStation(stationId);
+        return (idx == -1) ? null : stations[idx];
+    }
+
+    private Unit getUnitById(int unitId) {
+        int idx = indexOfUnit(unitId);
+        return (idx == -1) ? null : units[idx];
+    }
+
+    private Incident getIncidentById(int incidentId) {
+        int idx = indexOfIncident(incidentId);
+        return (idx == -1) ? null : incidents[idx];
+    }
+
+    private int indexOfStation(int stationId) {
+        for (int i = 0; i < stationCount; i++) {
+            if (stations[i] != null && stations[i].getStationId() == stationId) return i;
+        }
+        return -1;
+    }
+
+    private int indexOfUnit(int unitId) {
+        for (int i = 0; i < unitCount; i++) {
+            if (units[i] != null && units[i].getUnitId() == unitId) return i;
+        }
+        return -1;
+    }
+
+    private int indexOfIncident(int incidentId) {
+        for (int i = 0; i < incidentCount; i++) {
+            if (incidents[i] != null && incidents[i].getIncidentId() == incidentId) return i;
+        }
+        return -1;
+    }
+
+    private static int manhattan(int x1, int y1, int x2, int y2) {
+        int dx = x1 - x2;
+        if (dx < 0) dx = -dx;
+        int dy = y1 - y2;
+        if (dy < 0) dy = -dy;
+        return dx + dy;
+    }
+
+    private static void sortAscending(int[] arr) {
+        // Simple bubble sort (arrays only; small sizes)
+        for (int i = 0; i < arr.length - 1; i++) {
+            for (int j = 0; j < arr.length - 1 - i; j++) {
+                if (arr[j] > arr[j + 1]) {
+                    int tmp = arr[j];
+                    arr[j] = arr[j + 1];
+                    arr[j + 1] = tmp;
+                }
+            }
+        }
+    }
     
     
 }
