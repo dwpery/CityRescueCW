@@ -1,6 +1,8 @@
 package cityrescue;
 
+import cityrescue.enums.IncidentStatus;
 import cityrescue.enums.IncidentType;
+import cityrescue.enums.UnitStatus;
 import cityrescue.enums.UnitType;
 import cityrescue.exceptions.IDNotRecognisedException;
 import cityrescue.exceptions.InvalidCapacityException;
@@ -9,7 +11,6 @@ import cityrescue.exceptions.InvalidLocationException;
 import cityrescue.exceptions.InvalidNameException;
 import cityrescue.exceptions.InvalidSeverityException;
 import cityrescue.exceptions.InvalidUnitException;
-import cityrescue.exceptions.CapacityExceededException;
 
 /**
  * CityRescueImpl (Starter)
@@ -20,28 +21,31 @@ import cityrescue.exceptions.CapacityExceededException;
 public class CityRescueImpl implements CityRescue {
 
     //constants 
-    final int MAX_STATIONS = 20;
-    final int MAX_UNITS = 50;
-    final int MAX_INCIDENTS = 200;
+    private static final int MAX_STATIONS = 20;
+    private static final int MAX_UNITS = 50;
+    private static final int MAX_INCIDENTS = 200;
+
+    private static final int DEFAULT_STATION_CAPACITY = MAX_UNITS;
 
     //attributes creating objects for each class
-    CityMap cityMap;
-    Station[] stations = new Station[MAX_STATIONS];
-    Unit[] unit = new Unit[MAX_UNITS];
-    Incident[] incidents = new Incident[MAX_INCIDENTS];
+    private CityMap cityMap;
+
+    private Station[] stations = new Station[MAX_STATIONS];
+    private Unit[] units = new Unit[MAX_UNITS];
+    private Incident[] incidents = new Incident[MAX_INCIDENTS];
 
     //counts for station, unit, incident and obstacle 
-    int stationCount; 
-    int unitCount;
-    int incidentCount; 
-    int obstacleCount;
+    private int stationCount; 
+    private int unitCount;
+    private int incidentCount; 
+    private int obstacleCount;
 
     //used for creating new objects with new id's 
-    int nextStationId = 1;
-    int nextUnitId = 1;
-    int nextIncidentId = 1;
+    private int nextStationId = 1;
+    private int nextUnitId = 1;
+    private int nextIncidentId = 1;
 
-    int tick;
+    private int tick;
 
     @Override
     public void initialise(int width, int height) throws InvalidGridException {
@@ -51,7 +55,7 @@ public class CityRescueImpl implements CityRescue {
 
         cityMap = new CityMap(width, height);
         stations = new Station[MAX_STATIONS];
-        unit = new Unit[MAX_UNITS];
+        units = new Unit[MAX_UNITS];
         incidents = new Incident[MAX_INCIDENTS];
 
         stationCount = 0;
@@ -88,7 +92,7 @@ public class CityRescueImpl implements CityRescue {
         int[] unitIds = new int[unitCount];
         
         for (int i = 0; i <= unitCount - 1; i++) {
-            unitIds[i] = unit[i].getUnitId();
+            unitIds[i] = units[i].getUnitId();
         }
 
         return unitIds;
@@ -99,34 +103,56 @@ public class CityRescueImpl implements CityRescue {
         int[] incidentIds = new int[incidentCount];
         
         for (int i = 0; i <= incidentCount - 1; i++) {
-            incidentIds = incidents[i].getIncidentId();
+            incidentIds[i] = incidents[i].getIncidentId();
         }
 
         return incidentIds;
     }
 
+    //gets the status of the city rescue system in the specified format, with stations, units and incidents in ascending order by their id
     @Override
     public String getStatus() {
-        String report = "TICK=" + toString(tick);
-        report += "\nSTATIONS=" + toString(stationCount) + "UNITS=" + toString(unitCount) + "INCIDENTS=" + incidentCount + "OBSTACLES=" + toString(obstacleCount);
-        
-        report += "\nINCIDENTS\n";
-        int[] incidentIds = getIncidentIds();
-        for (int i = 0; i <= incidentCount - 1; i++) {
-            report += viewIncident(incidentsIds[i]) + "\n";
+
+        //using a stringbuilder to put strings together 
+        StringBuilder sb = new StringBuilder();
+
+        //header information with tick and counts of stations, units, incidents and obstacles
+        sb.append("TICK=").append(tick).append("\n");
+        sb.append("STATIONS=").append(stationCount)
+          .append(" UNITS=").append(unitCount)
+          .append(" INCIDENTS=").append(incidentCount)
+          .append(" OBSTACLES=").append(cityMap.getObstacleCount())
+          .append("\n");
+
+        //incidents and units in ascending order by their id
+        sb.append("INCIDENTS").append("\n");
+        int[] incIds = getIncidentIds();
+        for (int i = 0; i < incIds.length; i++) {
+            Incident inc = getIncidentById(incIds[i]);
+            if (inc != null) {
+                sb.append(formatIncidentLine(inc)).append("\n");
+            }
         }
 
-        report += "\nUNITS\n";
+        //units in ascending order by their id
+        sb.append("UNITS").append("\n");
         int[] unitIds = getUnitIds();
-        for (int i = 0; i <= unitCount - 1; i++) {
-            report += viewUnit(unitIds[i]) + "\n";
+        for (int i = 0; i < unitIds.length; i++) {
+            Unit u = getUnitById(unitIds[i]);
+            if (u != null) {
+                sb.append(formatUnitLine(u)).append("\n");
+            }
         }
 
-        return report;
+        //remove trailing newline
+        if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '\n') {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        return sb.toString();
     }
 
 
-    //methods for obsticles 
+    //methods for obstacles
 
     @Override
     public void addObstacle(int x, int y) throws InvalidLocationException {
@@ -142,7 +168,7 @@ public class CityRescueImpl implements CityRescue {
 
     @Override
     public void removeObstacle(int x, int y) throws InvalidLocationException {
-        if (cityMap.isBounds(x, y) != true) {
+        if (cityMap.inBounds(x, y) != true) {
             throw new InvalidLocationException("Coordinates are out of bounds");
         }
         
@@ -507,7 +533,7 @@ public class CityRescueImpl implements CityRescue {
     public void tick() {
         tick++;
 
-        // 1) Move EN_ROUTE units in ascending unitId order
+        
         int[] unitIds = getUnitIds();
         for (int i = 0; i < unitIds.length; i++) {
             Unit u = getUnitById(unitIds[i]);
@@ -521,7 +547,7 @@ public class CityRescueImpl implements CityRescue {
             }
         }
 
-        // 2) Mark arrivals (units that reached target)
+        
         for (int i = 0; i < unitIds.length; i++) {
             Unit u = getUnitById(unitIds[i]);
             if (u == null) continue;
@@ -536,7 +562,7 @@ public class CityRescueImpl implements CityRescue {
             }
         }
 
-        // 3) Process on-scene work (units in ascending unitId order)
+        
         for (int i = 0; i < unitIds.length; i++) {
             Unit u = getUnitById(unitIds[i]);
             if (u == null) continue;
@@ -546,7 +572,7 @@ public class CityRescueImpl implements CityRescue {
             }
         }
 
-        // 4) Resolve completed incidents in ascending incidentId order
+        
         int[] incIds = getIncidentIds();
         for (int i = 0; i < incIds.length; i++) {
             Incident inc = getIncidentById(incIds[i]);
@@ -558,7 +584,7 @@ public class CityRescueImpl implements CityRescue {
                     inc.setStatus(IncidentStatus.RESOLVED);
                     u.setStatus(UnitStatus.IDLE);
                     u.clearIncident();
-                    // We keep inc.assignedUnitId as-is for deterministic reporting.
+                    
                 }
             }
         }
@@ -588,10 +614,7 @@ public class CityRescueImpl implements CityRescue {
                 continue;
             }
 
-            // Tie-breakers:
-            // 1) shortest distance
-            // 2) lowest unitId
-            // 3) lowest homeStationId
+            
             if (dist < bestDist) {
                 best = u;
                 bestDist = dist;
@@ -610,7 +633,7 @@ public class CityRescueImpl implements CityRescue {
     }
 
     private void moveOneStep(Unit u, int targetX, int targetY) {
-        // Movement rule (N, E, S, W), no pathfinding. :contentReference[oaicite:2]{index=2}
+        
 
         int x = u.getX();
         int y = u.getY();
@@ -624,7 +647,7 @@ public class CityRescueImpl implements CityRescue {
 
         int currentDist = manhattan(x, y, targetX, targetY);
 
-        // First pass: first legal move that reduces distance
+        
         for (int i = 0; i < moves.length; i++) {
             int nx = moves[i][0];
             int ny = moves[i][1];
@@ -637,7 +660,7 @@ public class CityRescueImpl implements CityRescue {
             }
         }
 
-        // Second pass: first legal move in N,E,S,W
+        
         for (int i = 0; i < moves.length; i++) {
             int nx = moves[i][0];
             int ny = moves[i][1];
@@ -647,7 +670,7 @@ public class CityRescueImpl implements CityRescue {
             return;
         }
 
-        // If no legal move exists, unit stays put
+        
     }
 
     private String formatIncidentLine(Incident inc) {
@@ -671,11 +694,12 @@ public class CityRescueImpl implements CityRescue {
             + " INCIDENT=" + incStr;
 
         if (u.getStatus() == UnitStatus.AT_SCENE) {
-            // Requires Unit.getWorkTicksRemaining() (add the getter as noted above)
             base += " WORK=" + u.getWorkTicksRemaining();
         }
         return base;
     }
+
+    //helper methods for getting attributes by their id
 
     private Station getStationById(int stationId) {
         int idx = indexOfStation(stationId);
@@ -692,6 +716,7 @@ public class CityRescueImpl implements CityRescue {
         return (idx == -1) ? null : incidents[idx];
     }
 
+    //helper methods for getting the index of an attribute in its array by its id, returning -1 if not found
     private int indexOfStation(int stationId) {
         for (int i = 0; i < stationCount; i++) {
             if (stations[i] != null && stations[i].getStationId() == stationId) return i;
@@ -713,6 +738,7 @@ public class CityRescueImpl implements CityRescue {
         return -1;
     }
 
+    //movement rule 
     private static int manhattan(int x1, int y1, int x2, int y2) {
         int dx = x1 - x2;
         if (dx < 0) dx = -dx;
@@ -721,19 +747,5 @@ public class CityRescueImpl implements CityRescue {
         return dx + dy;
     }
 
-    private static void sortAscending(int[] arr) {
-        // Simple bubble sort (arrays only; small sizes)
-        for (int i = 0; i < arr.length - 1; i++) {
-            for (int j = 0; j < arr.length - 1 - i; j++) {
-                if (arr[j] > arr[j + 1]) {
-                    int tmp = arr[j];
-                    arr[j] = arr[j + 1];
-                    arr[j + 1] = tmp;
-                }
-            }
-        }
-    }
-    
-    
 }
 
