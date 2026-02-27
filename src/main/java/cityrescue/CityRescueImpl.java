@@ -476,9 +476,33 @@ public class CityRescueImpl implements CityRescue {
 
     @Override
     public void dispatch() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        // for each reported incident, find the best available unit and dispatch it
+        // applying the changes to the unit and incident status and assignments. 
+        // If no units are available, leave the incident as reported.
+        
+        int[] incIds = getIncidentIds();
+        for (int i = 0; i < incIds.length; i++) {
+            Incident inc = getIncidentById(incIds[i]);
+            if (inc == null) continue;
+
+            if (inc.getStatus() != IncidentStatus.REPORTED) {
+                continue;
+            }
+
+            Unit best = chooseBestUnitFor(inc);
+            if (best == null) {
+                continue; //done if there are none available
+            }
+
+            //apply the dispatch by assigning the unit to the incident and setting the appropriate statuses
+            inc.assignUnit(best.getUnitId());
+            inc.setStatus(IncidentStatus.DISPATCHED);
+
+            best.assignIncident(inc.getIncidentId());
+            best.setStatus(UnitStatus.EN_ROUTE);
+        }
     }
+
 
     @Override
     public void tick() {
