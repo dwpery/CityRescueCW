@@ -622,35 +622,49 @@ public class CityRescueImpl implements CityRescue {
 
 
 
-    //helper methods used throughout 
+    //extra methods created 
     
+    //method to choose the best unit for an incident 
     private Unit chooseBestUnitFor(Incident inc) {
+
+        //set best unit to null and best distance to an aribary large number
         Unit best = null;
         int bestDist = Integer.MAX_VALUE;
 
+        //loop through each unit 
         for (int i = 0; i < unitCount; i++) {
+            //create a temporary variable to store the current unit and check it is valid
             Unit u = units[i];
             if (u == null) continue;
 
+            //check if the unit is idle, can handle the incident type and is not already assigned to an incident
+            //if passes then continue
             if (u.getStatus() != UnitStatus.IDLE) continue;
             if (!u.canHandle(inc.getType())) continue;
             if (u.getAssignedIncidentId() != -1) continue;
 
+            //get the distance of the unit to the indcident using the manhatten method 
             int dist = manhattan(u.getX(), u.getY(), inc.getX(), inc.getY());
 
+            //if this is the first valid unit found, set it as the best by default 
             if (best == null) {
                 best = u;
                 bestDist = dist;
                 continue;
             }
 
-            
+            //if the distance is less than the best distance, update this unit as the best
             if (dist < bestDist) {
+                //set this unit as the best and update the best distance
                 best = u;
                 bestDist = dist;
+            
+            //check if the distance to the incident is the same, if so apply the tie break rule (choosing unit with the lowest id)
             } else if (dist == bestDist) {
                 if (u.getUnitId() < best.getUnitId()) {
                     best = u;
+                
+                //if the unit id is th same, apply the second tie break rule for chosing the unit with the lowest home station id    
                 } else if (u.getUnitId() == best.getUnitId()) {
                     if (u.getHomeStationId() < best.getHomeStationId()) {
                         best = u;
@@ -662,12 +676,14 @@ public class CityRescueImpl implements CityRescue {
         return best;
     }
 
+    //method to move the unit one step closer to the target location
     private void moveOneStep(Unit u, int targetX, int targetY) {
         
-
+        //local variables to store current x and y values of the unit 
         int x = u.getX();
         int y = u.getY();
 
+        //make a list of possible moves for N, E, S, W
         int[][] moves = new int[][] {
             { x, y - 1 }, // N
             { x + 1, y }, // E
@@ -675,22 +691,28 @@ public class CityRescueImpl implements CityRescue {
             { x - 1, y }  // W
         };
 
+        //calculete the current distance using manhatten to compare with the possible moves 
         int currentDist = manhattan(x, y, targetX, targetY);
 
-        
+        //loop through possible moves 
         for (int i = 0; i < moves.length; i++) {
+            //get new x and y position from the possible move
             int nx = moves[i][0];
             int ny = moves[i][1];
+
+            //check the movel is to a legal cell
             if (!cityMap.isLegalCell(nx, ny)) continue;
 
+            //calcuate the new distance and check if it closer
             int nd = manhattan(nx, ny, targetX, targetY);
+            //if it is closer, set as the new location of the unit 
             if (nd < currentDist) {
                 u.setLocation(nx, ny);
                 return;
             }
         }
 
-        
+        //loop for possible moves again to check if any are the same distance but still legal 
         for (int i = 0; i < moves.length; i++) {
             int nx = moves[i][0];
             int ny = moves[i][1];
@@ -703,7 +725,7 @@ public class CityRescueImpl implements CityRescue {
         
     }
 
-    //movement rule 
+    //movement manhatten rule 
     private static int manhattan(int x1, int y1, int x2, int y2) {
         int dx = x1 - x2;
         if (dx < 0) dx = -dx;
@@ -712,6 +734,7 @@ public class CityRescueImpl implements CityRescue {
         return dx + dy;
     }
 
+    //formattting methods for the status lines of incident 
     private String formatIncidentLine(Incident inc) {
         String unitStr = (inc.getAssignedUnitId() <= 0) ? "-" : String.valueOf(inc.getAssignedUnitId());
         return "I#" + inc.getIncidentId()
@@ -722,6 +745,7 @@ public class CityRescueImpl implements CityRescue {
             + " UNIT=" + unitStr;
     }
 
+    //formatting method for the unit line 
     private String formatUnitLine(Unit u) {
         String incStr = (u.getAssignedIncidentId() <= 0) ? "-" : String.valueOf(u.getAssignedIncidentId());
 
@@ -740,6 +764,7 @@ public class CityRescueImpl implements CityRescue {
 
     //helper methods for getting attributes by their id
 
+    //get station by id is not used throughout the code but useful for expanding the program 
     private Station getStationById(int stationId) {
         int idx = indexOfStation(stationId);
         return (idx == -1) ? null : stations[idx];
