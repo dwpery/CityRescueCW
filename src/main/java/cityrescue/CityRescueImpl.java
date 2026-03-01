@@ -156,10 +156,13 @@ public class CityRescueImpl implements CityRescue {
 
     @Override
     public void addObstacle(int x, int y) throws InvalidLocationException {
+
+        //exception handling for the location and maximum obstacles
         if (cityMap.inBounds(x, y) != true || cityMap.isLegalCell(x, y) != true) {
             throw new InvalidLocationException("Coordinates are out of bounds");
         }
 
+        //if the cell is legal, add the obstacle and increase the count of obstacles
         if (cityMap.isLegalCell(x, y)) {
             cityMap.addObstacle(x, y);
             obstacleCount++;
@@ -168,10 +171,13 @@ public class CityRescueImpl implements CityRescue {
 
     @Override
     public void removeObstacle(int x, int y) throws InvalidLocationException {
+
+        //exception handling for the location
         if (cityMap.inBounds(x, y) != true) {
             throw new InvalidLocationException("Coordinates are out of bounds");
         }
         
+        //if the cell is legal, remove the obstacle and decrease the count of obstacles
         if (cityMap.isLegalCell(x, y)) {
             cityMap.removeObstacle(x, y);
             obstacleCount--;
@@ -533,56 +539,80 @@ public class CityRescueImpl implements CityRescue {
     public void tick() {
         tick++;
 
-        
+        //tick movement for the units that are on route 
+        //get the unit ids
         int[] unitIds = getUnitIds();
+        //for each unit that is on route
         for (int i = 0; i < unitIds.length; i++) {
+            //get the unit object and check it is valid
             Unit u = getUnitById(unitIds[i]);
             if (u == null) continue;
-
+            //if the unit is on route, move it one step towards its assigned incident
             if (u.getStatus() == UnitStatus.EN_ROUTE) {
+                //get the target incident object and check it is valid
                 Incident target = getIncidentById(u.getAssignedIncidentId());
                 if (target != null) {
+                    //call move on step to move the unit one step towards the target incident
                     moveOneStep(u, target.getX(), target.getY());
                 }
             }
         }
 
-        
+        //after movement, check if any units have arrived at an incident 
         for (int i = 0; i < unitIds.length; i++) {
+            //get the unit object and check it is valid
             Unit u = getUnitById(unitIds[i]);
             if (u == null) continue;
 
+            //check if the unit is on route 
             if (u.getStatus() == UnitStatus.EN_ROUTE) {
+                //get the target incident object and check it is valid 
                 Incident target = getIncidentById(u.getAssignedIncidentId());
+                //check if the unit has arrived at the incident location
                 if (target != null && u.getX() == target.getX() && u.getY() == target.getY()) {
+                    //apply the arrival by setting the status to at scene 
                     u.setStatus(UnitStatus.AT_SCENE);
+                    //change the incidient status to in progress 
                     target.setStatus(IncidentStatus.IN_PROGRESS);
+                    //call the start work mehtod to start the tick clock for the unit to work on the incident 
                     u.startWork();
                 }
             }
         }
 
-        
+        //for each unit that is at the scene, check if they have completed their work
         for (int i = 0; i < unitIds.length; i++) {
+            //get the unit object and check it is valid
             Unit u = getUnitById(unitIds[i]);
             if (u == null) continue;
 
+            //if the unit is at the scene, call tickwork methiod to tick down the work clock and if completed allow the unit to move on to another task
             if (u.getStatus() == UnitStatus.AT_SCENE) {
                 u.tickWork();
             }
         }
 
         
+        //check if any incidents have been fully resolved, and if so, set the incident to resolved and idle the unit 
+        //get the incident ids 
         int[] incIds = getIncidentIds();
+        //loop through the incidents and if any are in progress
         for (int i = 0; i < incIds.length; i++) {
+            //get the incident object and check it is valid
             Incident inc = getIncidentById(incIds[i]);
             if (inc == null) continue;
 
+            //if the incident is in progress, check if the assigned unit has completes the work 
             if (inc.getStatus() == IncidentStatus.IN_PROGRESS) {
+                //get the assigned unit object and check it is valid
                 Unit u = getUnitById(inc.getAssignedUnitId());
+                //if the unit is at the scene and has completed the work, set the incident to resolved and idle the unit
                 if (u != null && u.getStatus() == UnitStatus.AT_SCENE && u.isWorkComplete()) {
+                    //set incident status to resolved 
                     inc.setStatus(IncidentStatus.RESOLVED);
+                    //set unit status to idle
                     u.setStatus(UnitStatus.IDLE);
+                    //clear the incident 
                     u.clearIncident();
                     
                 }
@@ -593,8 +623,8 @@ public class CityRescueImpl implements CityRescue {
 
 
     //helper methods used throughout 
-
-        private Unit chooseBestUnitFor(Incident inc) {
+    
+    private Unit chooseBestUnitFor(Incident inc) {
         Unit best = null;
         int bestDist = Integer.MAX_VALUE;
 
@@ -673,6 +703,15 @@ public class CityRescueImpl implements CityRescue {
         
     }
 
+    //movement rule 
+    private static int manhattan(int x1, int y1, int x2, int y2) {
+        int dx = x1 - x2;
+        if (dx < 0) dx = -dx;
+        int dy = y1 - y2;
+        if (dy < 0) dy = -dy;
+        return dx + dy;
+    }
+
     private String formatIncidentLine(Incident inc) {
         String unitStr = (inc.getAssignedUnitId() <= 0) ? "-" : String.valueOf(inc.getAssignedUnitId());
         return "I#" + inc.getIncidentId()
@@ -738,14 +777,6 @@ public class CityRescueImpl implements CityRescue {
         return -1;
     }
 
-    //movement rule 
-    private static int manhattan(int x1, int y1, int x2, int y2) {
-        int dx = x1 - x2;
-        if (dx < 0) dx = -dx;
-        int dy = y1 - y2;
-        if (dy < 0) dy = -dy;
-        return dx + dy;
-    }
 
 }
 
