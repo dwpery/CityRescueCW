@@ -12,7 +12,6 @@ import cityrescue.exceptions.InvalidLocationException;
 import cityrescue.exceptions.InvalidNameException;
 import cityrescue.exceptions.InvalidSeverityException;
 import cityrescue.exceptions.InvalidUnitException;
-import cityrescue.exceptions.CapacityExceededException;
 
 public interface CityRescue {
     void initialise(int width, int height) throws InvalidGridException;
@@ -58,7 +57,7 @@ public interface CityRescue {
         public CityMap(int width, int height) {
             
             if (width <= 0 || height <= 0) {
-                //throw new InvalidGridException("Invalid grid size: " + width + "x" + height);
+                throw new IllegalArgumentException("Width and height must be > 0");
             }
             
             //for some reason this doesnt work so just gonna leave like this for now 
@@ -110,9 +109,7 @@ public interface CityRescue {
 
         public void addObstacle (int x, int y){
             if(!inBounds(x,y)){
-                //throw new InvaildLocationException("Out of bounds");
-
-                //for some reason doesn't like being done locally but in github is fine?????
+                throw new IllegalArgumentException("Out of bounds");
             }
             if(!blocked[x][y]){
                 blocked[x][y] = true;
@@ -122,8 +119,7 @@ public interface CityRescue {
         
         public void removeObstacle(int x, int y){
             if (!inBounds(x, y)){
-                //throw new InvaildLocationException("Out of bounds");
-                //again dont work here 
+                throw new IllegalArgumentException("Out of bounds");
             }
             if(blocked[x][y]){
                 blocked[x][y] = false;
