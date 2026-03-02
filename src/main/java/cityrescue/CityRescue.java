@@ -13,6 +13,22 @@ import cityrescue.exceptions.InvalidNameException;
 import cityrescue.exceptions.InvalidSeverityException;
 import cityrescue.exceptions.InvalidUnitException;
 
+/**
+ * Core API for the CityRescue simulation.
+ * <p>
+ * Implementations manage:
+ * <ul>
+ *   <li>a 2D grid (the city map) with obstacles</li>
+ *   <li>stations (named locations with a maximum unit capacity)</li>
+ *   <li>units (e.g. ambulance / police / fire) belonging to stations</li>
+ *   <li>incidents (reported at locations with type and severity)</li>
+ *   <li>time progression via {@link #tick()} and automated allocation via {@link #dispatch()}</li>
+ * </ul>
+ * </p>
+ * <p>
+ * This interface also contains supporting model types as nested classes (map, station, incident, units).
+ * </p>
+ */
 public interface CityRescue {
     void initialise(int width, int height) throws InvalidGridException;
     int[] getGridSize();
@@ -42,26 +58,36 @@ public interface CityRescue {
     void tick();
     String getStatus();
 
-    
-
-
-    //classes for city rescue 
-
+    /**
+     * A simple in-memory representation of the city grid.
+     * <p>
+     * The map tracks its dimensions and which cells are blocked by obstacles.
+     * Coordinates are assumed to be zero-based: {@code 0 <= x < width}, {@code 0 <= y < height}.
+     * </p>
+     * <p>
+     * This class does not perform path-finding; it only exposes bounds/blocking queries and obstacle mutation.
+     * </p>
+     */
     public class CityMap{
 
         private final int width, height;
         private final boolean [][] blocked;
         private int obstacleCount;
 
-        //constructor
+        /**
+         * Creates a new city map with the given dimensions.
+         *
+         * @param width grid width (must be &gt; 0)
+         * @param height grid height (must be &gt; 0)
+         * @throws IllegalArgumentException if width or height are not positive
+         */
         public CityMap(int width, int height) {
-            
+
             if (width <= 0 || height <= 0) {
                 throw new IllegalArgumentException("Width and height must be > 0");
             }
-            
-            //for some reason this doesnt work so just gonna leave like this for now 
 
+        
             this.width = width;
             this.height = height;
             this.blocked = new boolean[width][height];
@@ -78,20 +104,35 @@ public interface CityRescue {
             return height;
         }
 
-        //get the number of obstacles 
+        //get the number of obstacles
         public int getObstacleCount(){
             return obstacleCount;
         }
 
 
-        //methods 
+        //methods
 
-        //checking bounds
+        /**
+         * Checks whether the supplied coordinates are within the map bounds.
+         *
+         * @param x x-coordinate (0-based)
+         * @param y y-coordinate (0-based)
+         * @return true if (x,y) is inside the grid; otherwise false
+         */
         public boolean inBounds (int x, int y){
             return x >= 0 && x < width && y >= 0 && y < height;
         }
 
-        //checking whether a cell is blocked 
+        /**
+         * Checks whether a cell is currently blocked by an obstacle.
+         * <p>
+         * If the coordinates are out of bounds this returns {@code false}.
+         * </p>
+         *
+         * @param x x-coordinate
+         * @param y y-coordinate
+         * @return true if the cell is blocked; false otherwise (including out of bounds)
+         */
         public boolean isBlocked (int x, int y){
             if (!inBounds(x, y)){
                 return false;
@@ -99,14 +140,25 @@ public interface CityRescue {
             return blocked[x][y];
         }
 
-        //if the location is in bounds and not blocked 
+        /**
+         * Convenience check for a cell that is both in bounds and not blocked.
+         *
+         * @param x x-coordinate
+         * @param y y-coordinate
+         * @return true if the cell can be occupied; false otherwise
+         */
         public boolean isLegalCell (int x, int y){
             return inBounds(x, y) && !blocked[x][y];
         }
 
 
-        //for adding and removing obstacles from the map (the remove might not be needed but good to have regardless)
-
+        /**
+         * Adds an obstacle at the given location if not already present.
+         *
+         * @param x x-coordinate
+         * @param y y-coordinate
+         * @throws IllegalArgumentException if the location is out of bounds
+         */
         public void addObstacle (int x, int y){
             if(!inBounds(x,y)){
                 throw new IllegalArgumentException("Out of bounds");
@@ -116,7 +168,14 @@ public interface CityRescue {
                 obstacleCount++;
             }
         }
-        
+
+        /**
+         * Removes an obstacle at the given location if present.
+         *
+         * @param x x-coordinate
+         * @param y y-coordinate
+         * @throws IllegalArgumentException if the location is out of bounds
+         */
         public void removeObstacle(int x, int y){
             if (!inBounds(x, y)){
                 throw new IllegalArgumentException("Out of bounds");
@@ -127,11 +186,18 @@ public interface CityRescue {
             }
 
         }
-
-
-
     }
 
+    /**
+     * Represents a response station (e.g. fire station, police station, ambulance depot).
+     * <p>
+     * A station has a fixed identity and location, plus a configurable maximum capacity.
+     * It tracks the unit IDs currently attached to it.
+     * </p>
+     * <p>
+     * This class only manages IDs; it does not own the unit objects themselves.
+     * </p>
+     */
     public class Station {
 
         private final int stationId;
@@ -142,10 +208,19 @@ public interface CityRescue {
         private int[] unitIds;
         private int unitCount;
 
-        //constructor
+        /**
+         * Creates a station.
+         *
+         * @param stationId unique station identifier (must be &gt; 0)
+         * @param name non-blank station name
+         * @param x x-coordinate of the station location
+         * @param y y-coordinate of the station location
+         * @param capacity maximum number of units this station can hold (must be &gt; 0)
+         * @throws IllegalArgumentException if stationId/capacity are not positive, or name is blank
+         */
         public Station(int stationId, String name, int x, int y, int capacity) {
 
-            //exception handling 
+            //exception handling
             if (stationId <= 0) {
                 throw new IllegalArgumentException("Station id must be > 0");
             }
@@ -155,7 +230,7 @@ public interface CityRescue {
             if (capacity <= 0) {
                 throw new IllegalArgumentException("Station capacity must be > 0");
             }
-            
+
             this.stationId = stationId;
             this.name = name;
             this.x = x;
@@ -167,7 +242,7 @@ public interface CityRescue {
         }
 
 
-        //getters 
+        //getters for the class
         public int getStationId(){
             return stationId;
         }
@@ -191,11 +266,17 @@ public interface CityRescue {
         }
 
 
-        //methods 
+        //methods for the class
 
+        /**
+         * Changes the station capacity and resizes the internal unit-id list.
+         *
+         * @param newCapacity new maximum number of units (must be &gt; 0 and &gt;= current unit count)
+         * @throws IllegalArgumentException if newCapacity is invalid
+         */
         public void setCapacity(int newCapacity){
 
-            //exception handling 
+            //exception handling
             if (newCapacity <= 0) {
                 throw new IllegalArgumentException("Capacity must be > 0");
             }
@@ -206,32 +287,42 @@ public interface CityRescue {
                 return;
             }
 
-            //using a temporary array to store the contents of unitID and updating the size 
+            //using a temporary array to store the contents of unitID and updating the size
             int[] resized = new int[newCapacity];
             for (int i = 0; i < unitCount; i++) {
                 resized[i] = unitIds[i];
             }
 
-            //putting the contents back in the array 
+            //putting the contents back in the array
             this.unitIds = resized;
             this.capacity = newCapacity;
 
         }
 
+        /**
+         * @return true if this station can accept at least one more unit; false otherwise
+         */
         public boolean hasSpace(){
             return unitCount < capacity;
         }
 
+        /**
+         * Adds a unit ID to this station (if not already present).
+         *
+         * @param unitId unit identifier (must be &gt; 0)
+         * @throws IllegalArgumentException if unitId is not positive
+         * @throws IllegalStateException if station is already at capacity
+         */
         public void addUnitId(int unitId){
 
-            //exception handling 
+            //exception handling
             if (unitId <= 0) {
             throw new IllegalArgumentException("Unit id must be > 0");
             }
             if (!hasSpace()) {
             throw new IllegalStateException("Station capacity exceeded");
             }
-        
+
             //just in case a unit is accidentally added again
             if (ownsUnit(unitId)) {
             return;
@@ -243,7 +334,14 @@ public interface CityRescue {
 
         }
 
-        //method for remoding a unit 
+        /**
+         * Removes a unit ID from this station if present.
+         * <p>
+         * Keeps the internal array compact by shifting elements left.
+         * </p>
+         *
+         * @param unitId unit identifier to remove
+         */
         public void removeUnitId(int unitId){
 
             int idx = indexOfUnit(unitId);
@@ -251,14 +349,24 @@ public interface CityRescue {
             return;
             }
 
-            //shift array left to keep array tidy 
+            //shift array left to keep array tidy
             for (int i = idx; i < unitCount - 1; i++) {
             unitIds[i] = unitIds[i + 1];
             }
             unitCount--;
-        } 
+        }
 
-        //helper method for index of the units 
+        /**
+         * Checks whether this station currently lists the supplied unit id.
+         *
+         * @param unitId unit identifier
+         * @return true if the unit id is stored for this station; false otherwise
+         */
+        public boolean ownsUnit(int unitId){
+            return indexOfUnit(unitId) != -1;
+        }
+
+        //helper method for index of the units
         private int indexOfUnit(int unitId) {
             for (int i = 0; i < unitCount; i++) {
                 if (unitIds[i] == unitId) {
@@ -268,14 +376,16 @@ public interface CityRescue {
             return -1;
         }
 
-        //for checking if the station owns a particular unit 
-        public boolean ownsUnit(int unitId){
-            return indexOfUnit(unitId) != -1;
-        }
-
     }
 
 
+    /**
+     * Represents an incident reported in the city.
+     * <p>
+     * Each incident has a type, severity (1..5), location, and lifecycle status.
+     * A single unit ID may be assigned to the incident at a time.
+     * </p>
+     */
     public class Incident {
 
         //attributes
@@ -285,11 +395,20 @@ public interface CityRescue {
         private final int x, y;
         private IncidentStatus status;
         private int assignedUnitId;
-        
 
-        //constructor 
+
+        /**
+         * Creates a new incident in {@link IncidentStatus#REPORTED} state with no assigned unit.
+         *
+         * @param incidentId unique incident identifier (must be &gt; 0)
+         * @param type incident type (must not be null)
+         * @param severity incident severity (must be in range 1..5)
+         * @param x x-coordinate where the incident occurred
+         * @param y y-coordinate where the incident occurred
+         * @throws IllegalArgumentException if incidentId is invalid, type is null, or severity is out of range
+         */
         public Incident(int incidentId, IncidentType type, int severity, int x, int y) {
-            
+
             //exception handling
             if (incidentId <= 0) {
                 throw new IllegalArgumentException("Incident id must be > 0");
@@ -306,11 +425,11 @@ public interface CityRescue {
             this.y = y;
             this.status = IncidentStatus.REPORTED;
             this.assignedUnitId = -1; // no unit assigned initially
-            
+
         }
 
 
-        //getters
+        //getters for the class 
         public int getIncidentId(){
             return incidentId;
         }
@@ -332,19 +451,29 @@ public interface CityRescue {
         public int getAssignedUnitId(){
             return assignedUnitId;
         }
-        
+
 
         //methods
 
-        //for setting the severity of an incident 
+        /**
+         * Updates incident severity.
+         *
+         * @param newSeverity new severity (1..5)
+         * @throws IllegalArgumentException if newSeverity is out of range
+         */
         public void setSeverity(int newSeverity){
 
             validateSeverity(newSeverity);
             this.severity = newSeverity;
-            
+
         }
 
-        //for setting the status of the incident 
+        /**
+         * Updates the incident status.
+         *
+         * @param newStatus new status (must not be null)
+         * @throws IllegalArgumentException if newStatus is null
+         */
         public void setStatus(IncidentStatus newStatus) {
         if (newStatus == null) {
             throw new IllegalArgumentException("Incident status must not be null");
@@ -352,23 +481,35 @@ public interface CityRescue {
         this.status = newStatus;
         }
 
-        //for assingning the unit that will deal with the incident 
+        /**
+         * Assigns a unit to this incident.
+         *
+         * @param unitId unit identifier (must be &gt; 0)
+         * @throws IllegalArgumentException if unitId is not positive
+         */
         public void assignUnit (int unitId){
             if(unitId <= 0){
                 throw new IllegalArgumentException("Unit id must be > 0");
             }
             this.assignedUnitId = unitId;
         }
-        
-        //for unassigning the unit when the incident is resolved, so the unit can move onto a different incident 
+
+        /**
+         * Clears the assigned unit (sets assigned unit id to -1).
+         */
         public void unassignUnit(){
              this.assignedUnitId = -1;
         }
 
 
-        //helper method 
+        //helper method
 
-        //to check the severity is within the bounds 
+        /**
+         * Validates a severity value.
+         *
+         * @param sev severity to check
+         * @throws IllegalArgumentException if sev is not in range 1..5
+         */
         private static void validateSeverity(int sev) {
         if (sev < 1 || sev > 5) {
             throw new IllegalArgumentException("Severity must be in range 1..5");
@@ -376,9 +517,25 @@ public interface CityRescue {
         }
     }
 
+    /**
+     * Base class for all response units (ambulance, police car, fire engine, etc.).
+     * <p>
+     * A unit has:
+     * <ul>
+     *   <li>an immutable id and type</li>
+     *   <li>a home station id</li>
+     *   <li>a current location</li>
+     *   <li>a status and (optionally) an assigned incident</li>
+     *   <li>a simple "work" timer once on scene</li>
+     * </ul>
+     * </p>
+     * <p>
+     * Subclasses define which incident types they can handle and how long they take at the scene.
+     * </p>
+     */
     public abstract class Unit {
 
-        //attributes 
+        //attributes
         private final int unitId;
         private final UnitType type;
 
@@ -387,12 +544,20 @@ public interface CityRescue {
         private int x, y;
 
         private UnitStatus status;
-        
+
         private int assignedIncidentId;
         private int workTicksRemaining;
-        
 
-        //constructor 
+
+        /**
+         * Creates a unit.
+         *
+         * @param unitId unique unit identifier
+         * @param type unit type
+         * @param homeStationId station id the unit belongs to
+         * @param x initial x-coordinate
+         * @param y initial y-coordinate
+         */
         public Unit(int unitId, UnitType type, int homeStationId, int x, int y) {
             this.unitId = unitId;
             this.type = type;
@@ -402,10 +567,10 @@ public interface CityRescue {
             this.status = UnitStatus.IDLE;
             this.assignedIncidentId = -1; // no incident assigned
             this.workTicksRemaining = 0;
-            
+
         }
 
-        //getters 
+        //getters for the class
 
         public int getUnitId(){
             return unitId;
@@ -428,6 +593,10 @@ public interface CityRescue {
         public int getAssignedIncidentId(){
             return assignedIncidentId;
         }
+
+        /**
+         * @return true if this unit is currently idle (dispatchable); false otherwise
+         */
         public boolean isAvailableForDispatch(){
             return status == UnitStatus.IDLE;
         }
@@ -436,8 +605,13 @@ public interface CityRescue {
         }
 
         //methods
-        
-        //methods for setting the station that the unit is attached too
+
+        /**
+         * Sets the unit's home station id.
+         *
+         * @param stationId station identifier (must be &gt; 0)
+         * @throws IllegalArgumentException if stationId is not positive
+         */
         public void setHomeStationId (int stationId){
             if (stationId <= 0) {
             throw new IllegalArgumentException("Home station id must be > 0");
@@ -445,13 +619,23 @@ public interface CityRescue {
             this.homeStationId = stationId;
         }
 
-        //for setting the location of the unit
+        /**
+         * Updates the unit's current location.
+         *
+         * @param x new x-coordinate
+         * @param y new y-coordinate
+         */
         public void setLocation(int x, int y){
             this.x = x;
             this.y = y;
         }
 
-        //for setting the status of the unit 
+        /**
+         * Updates the unit status.
+         *
+         * @param newStatus new status (must not be null)
+         * @throws IllegalArgumentException if newStatus is null
+         */
         public void setStatus(UnitStatus newStatus){
             if (newStatus == null) {
             throw new IllegalArgumentException("Unit status must not be null");
@@ -459,7 +643,12 @@ public interface CityRescue {
             this.status = newStatus;
         }
 
-        //for assinging an incident to the unit,
+        /**
+         * Assigns an incident to this unit and resets any running work timer.
+         *
+         * @param incidentId incident identifier (must be &gt; 0)
+         * @throws IllegalArgumentException if incidentId is not positive
+         */
         public void assignIncident(int incidentId){
             if (incidentId <= 0) {
             throw new IllegalArgumentException("Incident id must be > 0");
@@ -468,104 +657,149 @@ public interface CityRescue {
             // When assigned, work should not be running yet
             this.workTicksRemaining = 0;
         }
+
+        /**
+         * Clears the incident assignment and work timer.
+         */
         public void clearIncident(){
             this.assignedIncidentId = -1;
             this.workTicksRemaining = 0;
         }
 
-        //methods for when on the scene
-
-        //method to start the tick clock
+        /**
+         * Starts work on scene by setting {@code workTicksRemaining} to {@link #ticksAtScene()}.
+         */
         public void startWork(){
             this.workTicksRemaining = ticksAtScene();
         }
 
-        //method to advance the tick clock
+        /**
+         * Advances work by one tick (decrements {@code workTicksRemaining} if above zero).
+         */
         public void tickWork(){
             if (workTicksRemaining > 0) {
             workTicksRemaining--;
             }
         }
 
-        //checking whether the incident has been resolved 
+        /**
+         * @return true if the unit has completed its on-scene work; false otherwise
+         */
         public boolean isWorkComplete(){
             return workTicksRemaining <= 0;
         }
 
-        //polymorphism  
+        //polymorphism
 
+        /**
+         * Indicates whether this unit can respond to (and resolve) incidents of the given type.
+         *
+         * @param incidentType incident type to check
+         * @return true if this unit can handle the incident type; false otherwise
+         */
         public abstract boolean canHandle(IncidentType incidentType);
 
+        /**
+         * Defines how many ticks this unit takes to resolve an incident once on scene.
+         *
+         * @return number of ticks required at the scene
+         */
         public abstract int ticksAtScene();
-
-
-
-
 
     }
 
+    /**
+     * A medical response unit.
+     * <p>
+     * Can handle {@link IncidentType#MEDICAL} incidents and takes 2 ticks at the scene.
+     * </p>
+     */
     public final class Ambulance extends Unit{
 
-        //constructor 
+        /**
+         * Creates an ambulance unit at a starting location.
+         *
+         * @param unitId unique unit identifier
+         * @param homeStationId owning station id
+         * @param startX starting x-coordinate
+         * @param startY starting y-coordinate
+         */
         public Ambulance(int unitId, int homeStationId, int startX, int startY) {
             super(unitId, UnitType.AMBULANCE, homeStationId, startX, startY);
         }
 
-        //check incident is for ambulance 
         @Override
         public boolean canHandle(IncidentType incidentType){
             return incidentType == IncidentType.MEDICAL;
         }
 
-        //tick time for resolving an incident 
         @Override
         public int ticksAtScene(){
             return 2;
         }
 
-
     }
 
+    /**
+     * A law-enforcement response unit.
+     * <p>
+     * Can handle {@link IncidentType#CRIME} incidents and takes 3 ticks at the scene.
+     * </p>
+     */
     public final class PoliceCar extends Unit {
 
-        //constructor 
+        /**
+         * Creates a police car unit at a starting location.
+         *
+         * @param unitId unique unit identifier
+         * @param homeStationId owning station id
+         * @param startX starting x-coordinate
+         * @param startY starting y-coordinate
+         */
         public PoliceCar(int unitId, int homeStationId, int startX, int startY) {
             super(unitId, UnitType.POLICE_CAR, homeStationId, startX, startY);
         }
 
-        //check incident is for police
         @Override
         public boolean canHandle(IncidentType type) {
             return type == IncidentType.CRIME;
         }
 
-        //tick time for resolving an incident 
         @Override
         public int ticksAtScene() {
-            return 3; 
+            return 3;
         }
     }
 
+    /**
+     * A fire response unit.
+     * <p>
+     * Can handle {@link IncidentType#FIRE} incidents and takes 4 ticks at the scene.
+     * </p>
+     */
     public final class FireEngine extends Unit {
 
-        //constructor
+        /**
+         * Creates a fire engine unit at a starting location.
+         *
+         * @param unitId unique unit identifier
+         * @param homeStationId owning station id
+         * @param startX starting x-coordinate
+         * @param startY starting y-coordinate
+         */
         public FireEngine(int unitId, int homeStationId, int startX, int startY) {
             super(unitId, UnitType.FIRE_ENGINE, homeStationId, startX, startY);
         }
 
-        //check incident is for fire engine
         @Override
         public boolean canHandle(IncidentType type) {
             return type == IncidentType.FIRE;
         }
 
-        //tick time for resolving an incident 
         @Override
         public int ticksAtScene() {
             return 4; //check this is the right tick ect
         }
     }
 
-    
-    
 }
