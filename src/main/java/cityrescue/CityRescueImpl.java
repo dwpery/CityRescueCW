@@ -205,17 +205,12 @@ public class CityRescueImpl implements CityRescue {
     */
     @Override
     public void addObstacle(int x, int y) throws InvalidLocationException {
-
-        //exception handling for the location and maximum obstacles
-        if (cityMap.inBounds(x, y) != true || cityMap.isLegalCell(x, y) != true) {
-            throw new InvalidLocationException("Coordinates are out of bounds");
+        if (!cityMap.inBounds(x, y)) {
+            throw new InvalidLocationException("Obstacle location out of bounds");
         }
-
-        //if the cell is legal, add the obstacle and increase the count of obstacles
-        if (cityMap.isLegalCell(x, y)) {
-            cityMap.addObstacle(x, y);
-            obstacleCount++;
-        }
+        // Deterministic + idempotent
+        cityMap.addObstacle(x, y);
+        obstacleCount++;
     }
 
     /**
@@ -227,17 +222,12 @@ public class CityRescueImpl implements CityRescue {
     */
     @Override
     public void removeObstacle(int x, int y) throws InvalidLocationException {
-
-        //exception handling for the location
-        if (cityMap.inBounds(x, y) != true) {
-            throw new InvalidLocationException("Coordinates are out of bounds");
+        if (!cityMap.inBounds(x, y)) {
+            throw new InvalidLocationException("Obstacle location out of bounds");
         }
-        
-        //if the cell is legal, remove the obstacle and decrease the count of obstacles
-        if (cityMap.isLegalCell(x, y)) {
-            cityMap.removeObstacle(x, y);
-            obstacleCount--;
-        }
+        // Deterministic + idempotent
+        cityMap.removeObstacle(x, y);
+        obstacleCount--;
     }
 
 
