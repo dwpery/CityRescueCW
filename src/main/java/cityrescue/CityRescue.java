@@ -735,7 +735,7 @@ public interface CityRescue {
 
         @Override
         public int ticksAtScene(){
-            return 2;
+            return 2; //as specified 
         }
 
     }
@@ -767,7 +767,7 @@ public interface CityRescue {
 
         @Override
         public int ticksAtScene() {
-            return 3;
+            return 3; //as specified
         }
     }
 
@@ -798,7 +798,7 @@ public interface CityRescue {
 
         @Override
         public int ticksAtScene() {
-            return 4; //check this is the right tick ect
+            return 4; //as specified 
         }
     }
 
