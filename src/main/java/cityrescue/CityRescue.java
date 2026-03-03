@@ -1,6 +1,5 @@
 package cityrescue;
 
-import cityrescue.CityRescue.Unit;
 import cityrescue.enums.IncidentStatus;
 import cityrescue.enums.IncidentType;
 import cityrescue.enums.UnitStatus;
@@ -289,9 +288,7 @@ public interface CityRescue {
 
             //using a temporary array to store the contents of unitID and updating the size
             int[] resized = new int[newCapacity];
-            for (int i = 0; i < unitCount; i++) {
-                resized[i] = unitIds[i];
-            }
+            System.arraycopy(unitIds, 0, resized, 0, unitCount);
 
             //putting the contents back in the array
             this.unitIds = resized;

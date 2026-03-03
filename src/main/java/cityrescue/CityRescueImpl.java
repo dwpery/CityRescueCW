@@ -371,15 +371,12 @@ public class CityRescueImpl implements CityRescue {
 
         //create the new unit object based on the type of unit being added
         Unit u;
-        if (type == UnitType.AMBULANCE) {
-            u = new Ambulance(id, stationId, s.getX(), s.getY());
-        } else if (type == UnitType.FIRE_ENGINE) {
-            u = new FireEngine(id, stationId, s.getX(), s.getY());
-        } else if (type == UnitType.POLICE_CAR) {
-            u = new PoliceCar(id, stationId, s.getX(), s.getY());
-        } else {
-            //exception handling for an unrecognised unit type 
-            throw new InvalidUnitException("Unrecognised unit type");
+        switch (type) {
+            case AMBULANCE -> u = new Ambulance(id, stationId, s.getX(), s.getY());
+            case FIRE_ENGINE -> u = new FireEngine(id, stationId, s.getX(), s.getY());
+            case POLICE_CAR -> u = new PoliceCar(id, stationId, s.getX(), s.getY());
+            default -> //exception handling for an unrecognised unit type
+                throw new InvalidUnitException("Unrecognised unit type");
         }
 
         //apply the new unit to the units array and add the unit to a station 
@@ -895,15 +892,13 @@ public class CityRescueImpl implements CityRescue {
         //calculete the current distance using manhatten to compare with the possible moves 
         int currentDist = manhattan(x, y, targetX, targetY);
 
-        //loop through possible moves 
-        for (int i = 0; i < moves.length; i++) {
+        //loop through possible moves
+        for (int[] move : moves) {
             //get new x and y position from the possible move
-            int nx = moves[i][0];
-            int ny = moves[i][1];
-
+            int nx = move[0];
+            int ny = move[1];
             //check the movel is to a legal cell
             if (!cityMap.isLegalCell(nx, ny)) continue;
-
             //calcuate the new distance and check if it closer
             int nd = manhattan(nx, ny, targetX, targetY);
             //if it is closer, set as the new location of the unit 
@@ -913,12 +908,11 @@ public class CityRescueImpl implements CityRescue {
             }
         }
 
-        //loop for possible moves again to check if any are the same distance but still legal 
-        for (int i = 0; i < moves.length; i++) {
-            int nx = moves[i][0];
-            int ny = moves[i][1];
+        //loop for possible moves again to check if any are the same distance but still legal
+        for (int[] move : moves) {
+            int nx = move[0];
+            int ny = move[1];
             if (!cityMap.isLegalCell(nx, ny)) continue;
-
             u.setLocation(nx, ny);
             return;
         }
