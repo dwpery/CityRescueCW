@@ -683,16 +683,19 @@ public class CityRescueImpl implements CityRescue {
     @Override
     public void dispatch() {
         
-        
+        //for each reported incident, find the best available unit and dispatch it
         int[] incIds = getIncidentIds();
         for (int i = 0; i < incIds.length; i++) {
+            //get the incident object and check it is valid
             Incident inc = getIncidentById(incIds[i]);
             if (inc == null) continue;
 
+            //only dispatch if the incident is currently reported
             if (inc.getStatus() != IncidentStatus.REPORTED) {
                 continue;
             }
 
+            //find the best available unit for the incident using the helper method and handle if there are none available
             Unit best = chooseBestUnitFor(inc);
             if (best == null) {
                 continue; //done if there are none available
