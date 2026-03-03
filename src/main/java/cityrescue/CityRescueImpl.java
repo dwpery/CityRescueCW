@@ -55,7 +55,6 @@ public class CityRescueImpl implements CityRescue {
     private int stationCount; 
     private int unitCount;
     private int incidentCount; 
-    private int obstacleCount;
 
     //used for creating new objects with new id's 
     private int nextStationId = 1;
@@ -87,7 +86,6 @@ public class CityRescueImpl implements CityRescue {
         stationCount = 0;
         unitCount = 0;
         incidentCount = 0;
-        obstacleCount = 0;
 
         nextStationId = 1;
         nextUnitId = 1;
@@ -210,7 +208,6 @@ public class CityRescueImpl implements CityRescue {
         }
         // Deterministic + idempotent
         cityMap.addObstacle(x, y);
-        obstacleCount++;
     }
 
     /**
@@ -226,8 +223,7 @@ public class CityRescueImpl implements CityRescue {
             throw new InvalidLocationException("Obstacle location out of bounds");
         }
         // Deterministic + idempotent
-        cityMap.removeObstacle(x, y);
-        obstacleCount--;
+        cityMap.removeObstacle(x, y);       
     }
 
 

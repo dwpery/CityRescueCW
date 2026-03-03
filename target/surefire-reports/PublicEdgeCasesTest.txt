@@ -1,4 +1,12 @@
 -------------------------------------------------------------------------------
 Test set: PublicEdgeCasesTest
 -------------------------------------------------------------------------------
-Tests run: 19, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.087 s -- in PublicEdgeCasesTest
+Tests run: 19, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.105 s <<< FAILURE! -- in PublicEdgeCasesTest
+PublicEdgeCasesTest.removeObstacle_twice_isIdempotent_obstacleCountDoesNotGoNegative -- Time elapsed: 0.016 s <<< ERROR!
+java.lang.IllegalStateException: No obstacles to remove
+	at cityrescue.CityRescueImpl.removeObstacle(CityRescueImpl.java:229)
+	at PublicEdgeCasesTest.removeObstacle_twice_isIdempotent_obstacleCountDoesNotGoNegative(PublicEdgeCasesTest.java:60)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+
